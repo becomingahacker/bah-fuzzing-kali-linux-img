@@ -17,8 +17,8 @@ Foundations.
 Image families flow thusly:
 `kali-linux-cloud-genericcloud-amd64` -> `kali-linux-cloud-gce-amd64` -> `kali-linux-cloud-cml-amd64`
 
-* Import https://kali.download/cloud-images/kali-2024.2/ as an image.  You can do this by hand or use Cloud Builder.
-* Create instance using [kali-linux-2024-2-cloud-genericcloud-amd64](https://console.cloud.google.com/compute/imagesDetail/projects/gcp-asigbahgcp-nprd-47930/global/images/kali-linux-2024-2-cloud-genericcloud-amd64?project=gcp-asigbahgcp-nprd-47930) as a base, enable SSH control of serial console. 
+* Import https://kali.download/cloud-images/kali-2024.2/ (or later) as an image.  You can do this by hand or use Cloud Builder.
+* Create instance using e.g. [kali-linux-2024-2-cloud-genericcloud-amd64](https://console.cloud.google.com/compute/imagesDetail/projects/gcp-asigbahgcp-nprd-47930/global/images/kali-linux-2024-2-cloud-genericcloud-amd64?project=gcp-asigbahgcp-nprd-47930) as a base, enable SSH control of serial console. 
 * Disable cloud-init control of the network.  The bootstrapped network interferes with it.
 * In `/etc/cloud/cloud.cfg.d/99_disable_networking_config.cfg`:
 ```

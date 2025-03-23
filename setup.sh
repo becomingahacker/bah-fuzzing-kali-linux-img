@@ -38,7 +38,6 @@ echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
   bookworm stable" | \
   tee /etc/apt/sources.list.d/docker.list
-apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # Install gcloud SDK, including Kubernetes
@@ -47,7 +46,6 @@ echo \
   "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt \
   cloud-sdk main" | \
   tee /etc/apt/sources.list.d/google-cloud-sdk.list
-apt-get update
 apt-get install -y google-cloud-cli google-cloud-cli-gke-gcloud-auth-plugin google-cloud-cli-kubectl-oidc kubectl
 
 # Make network timeout shorter to speed up boot if the network is unavailable
@@ -57,8 +55,9 @@ echo -e \"[Service]\nTimeoutStartSec=60sec\" > /etc/systemd/system/networking.se
 # Don't display message when automatically logging in
 touch /root/.hushlogin
 
-chmod u+x /provision/websploit/websploit.sh
-/provision/websploit/websploit.sh
+# FIXME cmm - Temporarily disable websploit for troubleshooting
+#chmod u+x /provision/websploit/websploit.sh
+#/provision/websploit/websploit.sh
 
 chmod u+x /provision/becoming-a-hacker/becoming-a-hacker.sh
 /provision/becoming-a-hacker/becoming-a-hacker.sh

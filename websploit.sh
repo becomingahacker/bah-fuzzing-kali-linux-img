@@ -42,7 +42,7 @@ echo " "
 # Setting Up vim with Python Jedi to be used in several training courses
 
 apt update
-apt install -y wget vim vim-python-jedi curl exuberant-ctags git ack-grep python3-pip
+apt install -y wget vim vim-python-jedi curl exuberant-ctags git ack-grep python3-pip pipx
 pip3 install pep8 flake8 pyflakes isort yapf Flask
 
 # HACK cmm - We already have docker installed

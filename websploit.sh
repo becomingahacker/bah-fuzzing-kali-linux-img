@@ -43,7 +43,7 @@ echo " "
 
 apt update
 apt install -y wget vim vim-python-jedi curl exuberant-ctags git ack-grep python3-pip pipx
-pip3 install pep8 flake8 pyflakes isort yapf Flask
+pip3 install --break-system-packages pep8 flake8 pyflakes isort yapf Flask
 
 # HACK cmm - We already have docker installed
 #curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -

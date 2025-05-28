@@ -54,6 +54,8 @@ echo \
 apt-get update
 apt-get install -y google-cloud-cli google-cloud-cli-gke-gcloud-auth-plugin google-cloud-cli-kubectl-oidc kubectl
 
+apt-get install zenmap
+
 # Make network timeout shorter to speed up boot if the network is unavailable
 mkdir -p /etc/systemd/system/networking.service.d/
 echo -e \"[Service]\nTimeoutStartSec=60sec\" > /etc/systemd/system/networking.service.d/timeout.conf

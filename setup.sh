@@ -10,6 +10,8 @@ env
 # Wait for possible auto updates to complete.  This may not be needed
 flock -w 120 /var/lib/apt/lists/lock -c 'echo waiting for lock'
 
+wget https://archive.kali.org/archive-keyring.gpg -O /usr/share/keyrings/kali-archive-keyring.gpg
+
 apt-get update
 apt-get upgrade -y
 

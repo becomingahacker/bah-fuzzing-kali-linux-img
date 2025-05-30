@@ -68,7 +68,8 @@ TFTP_OPTIONS="--secure --create"
 
 EOF
 
-service tftpd-hpa restart
+systemctl enable tftpd-hpa.service
+systemctl start tftpd-hpa.service
 
 # Make network timeout shorter to speed up boot if the network is unavailable
 mkdir -p /etc/systemd/system/networking.service.d/

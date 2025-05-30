@@ -56,7 +56,19 @@ echo \
 apt-get update
 apt-get install -y google-cloud-cli google-cloud-cli-gke-gcloud-auth-plugin google-cloud-cli-kubectl-oidc kubectl
 
-apt-get install zenmap
+apt-get install -y zenmap
+apt-get install -y tftpd-hpa
+cat > /etc/default/tftpd-hpa <<EOF
+# /etc/default/tftpd-hpa
+
+TFTP_USERNAME="nobody"
+TFTP_DIRECTORY="/srv/tftp"
+TFTP_ADDRESS=":69"
+TFTP_OPTIONS="--secure --create"
+
+EOF
+
+service tftpd-hpa restart
 
 # Make network timeout shorter to speed up boot if the network is unavailable
 mkdir -p /etc/systemd/system/networking.service.d/

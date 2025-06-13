@@ -1,7 +1,7 @@
 steps:
   - name: 'us-east1-docker.pkg.dev/gcp-asigbahgcp-nprd-47930/bah-builders/bah-kali-linux-img'
     env:
-      - 'KALI_VERSION=2024.2'
+      - 'KALI_VERSION=2025.2'
       - 'CML_ENDPOINT=https://gcp.becomingahacker.com'
       - 'GS_IMAGE_PATH=gs://bah-machine-images/kali-linux'
       # Pristine

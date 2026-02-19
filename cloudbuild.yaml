@@ -99,7 +99,8 @@ steps:
       # Only PROJECT_ID, LOCATION, BUILD_ID, _GCE_BASE_FAMILY, _GCE_BASE_SOURCE_FAMILY are Cloud Build substitutions
       ZONE="${LOCATION}-b"
       INSTANCE_NAME="kali-gce-base-${BUILD_ID}"
-      IMAGE_NAME="kali-linux-${_KALI_VER}-$(date +%Y-%m-%d)-cloud-gce-amd64"
+      KALI_VERSION_DASHED="$(tr '.' '-' <<< "${_KALI_VER}")"
+      IMAGE_NAME="kali-linux-${KALI_VERSION_DASHED}-$(date +%Y-%m-%d)-cloud-gce-amd64"
       if gcloud compute images describe-from-family "${_GCE_BASE_FAMILY}" --project="${PROJECT_ID}" --location="${LOCATION}" 2>/dev/null; then
         echo "Image family ${_GCE_BASE_FAMILY} already exists. Skipping GCE base image creation."
         exit 0

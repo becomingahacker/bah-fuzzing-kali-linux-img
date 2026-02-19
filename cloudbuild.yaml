@@ -7,11 +7,14 @@ steps:
   # Download from https://kali.download/cloud-images/current/ and import as GCE image when not already present.
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: import-kali-generic
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
+    script: |
+        #!/usr/bin/env bash
+
         set -e
+        set -x 
+
+        env
+
         KALI_VER="${_KALI_VER}"
         FAMILY="${_GCE_BASE_SOURCE_FAMILY}"
         IMAGE_NAME="kali-linux-${_KALI_VER}-${_GCE_BASE_SOURCE_FAMILY}"
@@ -48,54 +51,59 @@ steps:
         echo "Removing temporary object ${GCS_IMPORT}..."
         gsutil -q rm "${GCS_IMPORT}" 2>/dev/null || true
         echo "Image ${IMAGE_NAME} imported and set as family ${FAMILY}."
+    env:
+      - 'LOCATION=$LOCATION'
+      - 'PROJECT_ID=$PROJECT_ID'
+      - 'BUILD_ID=$BUILD_ID'
     timeout: '3600s'
 
   # Create GCE base image for Packer when not already present (README: "GCE Base Kali Image").
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: create-gce-base
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        set -e
-        # Only PROJECT_ID, LOCATION, BUILD_ID, _GCE_BASE_FAMILY, _GCE_BASE_SOURCE_FAMILY are Cloud Build substitutions
-        ZONE="${LOCATION}-b"
-        INSTANCE_NAME="kali-gce-base-${BUILD_ID}"
-        IMAGE_NAME="kali-linux-$$(date +%Y-%m-%d)-cloud-gce-amd64"
-        if gcloud compute images describe-from-family "${_GCE_BASE_FAMILY}" --project="${PROJECT_ID}" 2>/dev/null; then
-          echo "Image family ${_GCE_BASE_FAMILY} already exists. Skipping GCE base image creation."
-          exit 0
-        fi
-        echo "Creating VM to build GCE base image from family ${_GCE_BASE_SOURCE_FAMILY}..."
-        gcloud compute instances create "$${INSTANCE_NAME}" \
-          --project="${PROJECT_ID}" \
-          --zone="$${ZONE}" \
-          --image-family="${_GCE_BASE_SOURCE_FAMILY}" \
-          --machine-type=e2-medium \
-          --metadata-from-file=startup-script=/workspace/scripts/create-gce-base.sh \
-          --scopes=cloud-platform
-        echo "Waiting for VM to complete startup script and shut down (this may take 20-30 minutes)..."
-        for i in $$(seq 1 60); do
-          STATUS=$$(gcloud compute instances describe "$${INSTANCE_NAME}" --zone="$${ZONE}" --project="${PROJECT_ID}" --format='value(status)' 2>/dev/null || echo "UNKNOWN")
-          echo "Instance status: $${STATUS}"
-          if [ "$${STATUS}" = "TERMINATED" ]; then break; fi
-          sleep 30
-        done
-        if [ "$${STATUS}" != "TERMINATED" ]; then
-          echo "VM did not terminate in time. Check serial console output."
-          exit 1
-        fi
-        echo "Creating image from boot disk..."
-        gcloud compute images create "$${IMAGE_NAME}" \
-          --project="${PROJECT_ID}" \
-          --source-disk="$${INSTANCE_NAME}" \
-          --source-disk-zone="$${ZONE}" \
-          --family="${_GCE_BASE_FAMILY}" \
-          --storage-location=us-east1 \
-          --description="$${IMAGE_NAME}"
-        echo "Deleting temporary instance and disk..."
-        gcloud compute instances delete "$${INSTANCE_NAME}" --zone="$${ZONE}" --project="${PROJECT_ID}" --delete-disks=boot -q
-        echo "GCE base image $${IMAGE_NAME} created in family ${_GCE_BASE_FAMILY}."
+    script: |
+      #!/usr/bin/env bash
+      set -e
+      set -x
+      env
+
+      # Only PROJECT_ID, LOCATION, BUILD_ID, _GCE_BASE_FAMILY, _GCE_BASE_SOURCE_FAMILY are Cloud Build substitutions
+      ZONE="${LOCATION}-b"
+      INSTANCE_NAME="kali-gce-base-${BUILD_ID}"
+      IMAGE_NAME="kali-linux-$$(date +%Y-%m-%d)-cloud-gce-amd64"
+      if gcloud compute images describe-from-family "${_GCE_BASE_FAMILY}" --project="${PROJECT_ID}" 2>/dev/null; then
+        echo "Image family ${_GCE_BASE_FAMILY} already exists. Skipping GCE base image creation."
+        exit 0
+      fi
+      echo "Creating VM to build GCE base image from family ${_GCE_BASE_SOURCE_FAMILY}..."
+      gcloud compute instances create "$${INSTANCE_NAME}" \
+        --project="${PROJECT_ID}" \
+        --zone="$${ZONE}" \
+        --image-family="${_GCE_BASE_SOURCE_FAMILY}" \
+        --machine-type=e2-medium \
+        --metadata-from-file=startup-script=/workspace/scripts/create-gce-base.sh \
+        --scopes=cloud-platform
+      echo "Waiting for VM to complete startup script and shut down (this may take 20-30 minutes)..."
+      for i in $$(seq 1 60); do
+        STATUS=$$(gcloud compute instances describe "$${INSTANCE_NAME}" --zone="$${ZONE}" --project="${PROJECT_ID}" --format='value(status)' 2>/dev/null || echo "UNKNOWN")
+        echo "Instance status: $${STATUS}"
+        if [ "$${STATUS}" = "TERMINATED" ]; then break; fi
+        sleep 30
+      done
+      if [ "$${STATUS}" != "TERMINATED" ]; then
+        echo "VM did not terminate in time. Check serial console output."
+        exit 1
+      fi
+      echo "Creating image from boot disk..."
+      gcloud compute images create "$${IMAGE_NAME}" \
+        --project="${PROJECT_ID}" \
+        --source-disk="$${INSTANCE_NAME}" \
+        --source-disk-zone="$${ZONE}" \
+        --family="${_GCE_BASE_FAMILY}" \
+        --storage-location=us-east1 \
+        --description="$${IMAGE_NAME}"
+      echo "Deleting temporary instance and disk..."
+      gcloud compute instances delete "$${INSTANCE_NAME}" --zone="$${ZONE}" --project="${PROJECT_ID}" --delete-disks=boot -q
+      echo "GCE base image $${IMAGE_NAME} created in family ${_GCE_BASE_FAMILY}."
     env:
       - 'LOCATION=$LOCATION'
       - 'PROJECT_ID=$PROJECT_ID'
@@ -104,7 +112,7 @@ steps:
 
   - name: 'us-east1-docker.pkg.dev/gcp-asigbahgcp-nprd-47930/bah-builders/bah-kali-linux-img'
     env:
-      - 'KALI_VERSION=2025.2'
+      - 'KALI_VERSION=$_KALI_VER'
       - 'CML_ENDPOINT=https://becomingahacker.com'
       - 'GS_IMAGE_PATH=gs://bah-machine-images/kali-linux'
       # Pristine

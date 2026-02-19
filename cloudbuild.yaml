@@ -2,6 +2,11 @@ substitutions:
   _KALI_VER: '2025.4'
   _GCE_BASE_SOURCE_FAMILY: 'kali-linux-cloud-genericcloud-amd64'
   _GCE_BASE_FAMILY: 'kali-linux-cloud-gce-amd64'
+  # 'pristine' or 'tweaks' - determines the source image family and provision 
+  # script, scripts/setup.sh or scripts/tweaks.sh
+  _BUILD_TYPE: 'pristine'
+  _CML_ENDPOINT: 'https://becomingahacker.com'
+  _GS_IMAGE_PATH: 'gs://bah-machine-images/kali-linux'
 
 steps:
   # Download from https://kali.download/cloud-images/current/ and import as GCE image when not already present.
@@ -15,10 +20,7 @@ steps:
 
         env
 
-        KALI_VER="${_KALI_VER}"
-        FAMILY="${_GCE_BASE_SOURCE_FAMILY}"
-        IMAGE_NAME="kali-linux-${_KALI_VER}-${_GCE_BASE_SOURCE_FAMILY}"
-        KALI_URL="https://kali.download/cloud-images/current/kali-linux-${_KALI_VER}-${_GCE_BASE_SOURCE_FAMILY}.tar.xz"
+        KALI_URL="https://kali.download/cloud-images/kali-${_KALI_VER}/kali-linux-${_KALI_VER}-cloud-genericcloud-amd64.tar.xz"
         GCS_IMPORT="gs://bah-machine-images/kali-import/${BUILD_ID}-disk.raw"
         if gcloud compute images describe-from-family "${FAMILY}" --project="${PROJECT_ID}" 2>/dev/null; then
           echo "Image family ${FAMILY} already exists. Skipping download/import from kali.download."
@@ -111,27 +113,6 @@ steps:
     timeout: '2400s'
 
   - name: 'us-east1-docker.pkg.dev/gcp-asigbahgcp-nprd-47930/bah-builders/bah-kali-linux-img'
-    env:
-      - 'KALI_VERSION=$_KALI_VER'
-      - 'CML_ENDPOINT=https://becomingahacker.com'
-      - 'GS_IMAGE_PATH=gs://bah-machine-images/kali-linux'
-      # Pristine
-      - 'SOURCE_IMAGE_FAMILY=kali-linux-cloud-gce-amd64'
-      # Tweaks
-      #- 'SOURCE_IMAGE_FAMILY=kali-linux-cloud-cml-amd64'
-      # Pristine
-      - 'PROVISION_SCRIPT=setup.sh'
-      # Tweaks
-      #- 'PROVISION_SCRIPT=tweaks.sh'
-      - 'APT_OPTS="-o Dpkg::Options::=--force-confmiss -o Dpkg::Options::=--force-confnew -o DPkg::Progress-Fancy=0 -o APT::Color=0"'
-      - 'DEBIAN_FRONTEND=noninteractive'
-      - 'TZ=Etc/UTC'
-      - 'PACKER_LOG=1'
-      - 'LOCATION=$LOCATION'
-      - 'PROJECT_ID=$PROJECT_ID'
-      - 'ZONE=$LOCATION-b'
-      - 'SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_EMAIL'
-
     script: |
       #!/usr/bin/env bash
 
@@ -142,6 +123,17 @@ steps:
 
       echo "Locale settings:"
       cat /etc/default/locale
+
+      if [ "$BUILD_TYPE" = "pristine" ]; then
+        SOURCE_IMAGE_FAMILY="kali-linux-cloud-gce-amd64"
+        PROVISION_SCRIPT="setup.sh"
+      elif [ "$BUILD_TYPE" = "tweaks" ]; then
+        SOURCE_IMAGE_FAMILY="kali-linux-cloud-cml-amd64"
+        PROVISION_SCRIPT="tweaks.sh"
+      else
+        echo "Invalid build type: $_BUILD_TYPE"
+        exit 1
+      fi
 
       # SSH key pair for Packer.  Will be removed after build.
       mkdir -vp secrets
@@ -179,10 +171,22 @@ steps:
           --destination-uri ${GS_IMAGE_PATH}/${IMAGE}.qcow2
       fi
 
+    env:
+      - 'KALI_VERSION=$_KALI_VER'
+      - 'CML_ENDPOINT=$_CML_ENDPOINT'
+      - 'GS_IMAGE_PATH=$_GS_IMAGE_PATH'
+      - 'BUILD_TYPE=$_BUILD_TYPE'
+      - 'APT_OPTS="-o Dpkg::Options::=--force-confmiss -o Dpkg::Options::=--force-confnew -o DPkg::Progress-Fancy=0 -o APT::Color=0"'
+      - 'DEBIAN_FRONTEND=noninteractive'
+      - 'TZ=Etc/UTC'
+      - 'PACKER_LOG=1'
+      - 'LOCATION=$LOCATION'
+      - 'PROJECT_ID=$PROJECT_ID'
+      - 'ZONE=$LOCATION-b'
+      - 'SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_EMAIL'
 
 logsBucket: 'gs://bah-build-logs/bah-kali-linux-img'
 serviceAccount: 'projects/gcp-asigbahgcp-nprd-47930/serviceAccounts/build-bah-kali-linux-img@gcp-asigbahgcp-nprd-47930.iam.gserviceaccount.com'
-projectId: 'gcp-asigbahgcp-nprd-47930'
 
 options:
   logging: GCS_ONLY

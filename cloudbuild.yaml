@@ -30,7 +30,7 @@ steps:
       fi
         
       echo "Installing xz-utils for tar extraction..."
-      apt-get update -qq && apt-get install -y -qq xz-utils curl
+      apt-get update -qq && apt-get install -y -qq xz-utils curl jq
       echo "Downloading Kali generic cloud image from ${KALI_URL}..."
       curl -fsSL -o kali.tar.xz "${KALI_URL}"
       echo "Extracting disk.raw from tarball..."
@@ -47,7 +47,7 @@ steps:
       rm -f "${DISK_RAW}"
 
       echo "Importing image into GCP (this may take 15-30 minutes)..."
-      gcloud migration vms image-imports create "${IMAGE_NAME}" \
+      gcloud migration vms image-imports create "${BUILD_ID}-image-import" \
         --source-file="${GCS_IMPORT}" \
         --image-name="${IMAGE_NAME}" \
         --project="${PROJECT_ID}" \
@@ -55,7 +55,21 @@ steps:
         --family-name="${_GCE_SOURCE_FAMILY}" \
         --location="${LOCATION}" \
         --single-region-storage \
+        --skip-os-adaptation \
         --description="Kali Linux ${_KALI_VER} generic cloud (imported from kali.download)"
+
+      echo "Waiting for image import to complete (this may take 20-30 minutes)..."
+      for i in $$(seq 1 60); do
+        STATUS=$(gcloud migration vms image-imports describe "${BUILD_ID}-image-import" --project="${PROJECT_ID}" --location="${LOCATION}" --format json | jq -r .recentImageImportJobs[0].state 2> /dev/null || echo "UNKNOWN")
+        echo "Image import status: ${STATUS}"
+        if [ "${STATUS}" = "RUNNING" ]; then sleep 30; continue; fi
+        break;
+      done
+
+      if [ "${STATUS}" != "SUCCEEDED" ]; then
+        echo "Image import failed. Check output."
+        exit 1
+      fi
 
       echo "Removing temporary object ${GCS_IMPORT}..."
       gsutil -q rm "${GCS_IMPORT}" 2>/dev/null || true
@@ -64,6 +78,7 @@ steps:
       - 'LOCATION=$LOCATION'
       - 'PROJECT_ID=$PROJECT_ID'
       - 'BUILD_ID=$BUILD_ID'
+      - 'APT_OPTS="-o Dpkg::Options::=--force-confmiss -o Dpkg::Options::=--force-confnew -o DPkg::Progress-Fancy=0 -o APT::Color=0"'
     timeout: '3600s'
 
   # Create GCE base image for Packer when not already present (README: "GCE Base Kali Image").
@@ -79,7 +94,7 @@ steps:
       ZONE="${LOCATION}-b"
       INSTANCE_NAME="kali-gce-base-${BUILD_ID}"
       IMAGE_NAME="kali-linux-$(date +%Y-%m-%d)-cloud-gce-amd64"
-      if gcloud compute images describe-from-family "${_GCE_BASE_FAMILY}" --project="${PROJECT_ID}" 2>/dev/null; then
+      if gcloud compute images describe-from-family "${_GCE_BASE_FAMILY}" --project="${PROJECT_ID}" --location="${LOCATION}" 2>/dev/null; then
         echo "Image family ${_GCE_BASE_FAMILY} already exists. Skipping GCE base image creation."
         exit 0
       fi

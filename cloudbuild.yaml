@@ -47,7 +47,7 @@ steps:
       rm -f "${DISK_RAW}"
 
       IMPORT_JOB_NAME="image-import-${BUILD_ID}"
-      echo 'Importing image into GCP (this may take 15-30 minutes)...'
+      echo 'Importing image into GCP.  This may take 15-30 minutes...'
       # Kali Linux is not supported by the OS adaptation service, so we skip it.
       gcloud migration vms image-imports create "${IMPORT_JOB_NAME}" \
         --source-file="${GCS_IMPORT}" \

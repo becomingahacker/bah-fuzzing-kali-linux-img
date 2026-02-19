@@ -77,7 +77,7 @@ echo -e \"[Service]\nTimeoutStartSec=60sec\" > /etc/systemd/system/networking.se
 touch /root/.hushlogin
 
 # FIXME cmm - Temporarily disable websploit for troubleshooting
-cd /provision
+cd /provision/websploit
 git clone https://github.com/The-Art-of-Hacking/websploit.git
 cd websploit
 chmod u+x install.sh

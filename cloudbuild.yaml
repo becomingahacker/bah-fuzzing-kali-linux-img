@@ -21,7 +21,6 @@ steps:
       - 'ZONE=$LOCATION-b'
       - 'SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_EMAIL'
 
-
     script: |
       #!/usr/bin/env bash
 

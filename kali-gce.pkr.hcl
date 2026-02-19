@@ -107,16 +107,6 @@ build {
   }
 
   provisioner "file" {
-    source      = "/workspace/websploit.sh"
-    destination = "/provision/websploit/websploit.sh"
-  }
-
-  provisioner "file" {
-    source      = "/workspace/websploit-docker-compose.yml"
-    destination = "/provision/websploit/docker-compose.yml"
-  }
-
-  provisioner "file" {
     source      = "/workspace/becoming-a-hacker.sh"
     destination = "/provision/becoming-a-hacker/becoming-a-hacker.sh"
   }

@@ -6,6 +6,9 @@ set -e
 set -x
 env
 
+# For troubleshooting, disable when not in use.  Serial console only.
+echo 'root:CHANGEME' | /usr/sbin/chpasswd
+
 PHASE_FILE=/root/.gce-base-phase
 export DEBIAN_FRONTEND=noninteractive
 export APT_OPTS="-o Dpkg::Options::=--force-confmiss -o Dpkg::Options::=--force-confnew -o DPkg::Progress-Fancy=0 -o APT::Color=0"

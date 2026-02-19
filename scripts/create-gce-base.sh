@@ -3,6 +3,8 @@
 # Runs in phases with reboots; state is stored in /root/.gce-base-phase.
 
 set -e
+set -x
+env
 
 PHASE_FILE=/root/.gce-base-phase
 export DEBIAN_FRONTEND=noninteractive

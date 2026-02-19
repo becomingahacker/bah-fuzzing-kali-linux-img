@@ -1,21 +1,19 @@
 steps:
   # Download from https://kali.download/cloud-images/current/ and import as GCE image when not already present.
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    env:
-      - 'KALI_VER=2025.4'
-      - 'GCE_BASE_FAMILY=kali-linux-cloud-gce-amd64'
-      - 'GCE_BASE_SOURCE_FAMILY=kali-linux-cloud-genericcloud-amd64'
+    substitutions:
+      - '_KALI_VER=2025.4'
+      - '_GCE_BASE_SOURCE_FAMILY=kali-linux-cloud-genericcloud-amd64'
     id: import-kali-generic
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         set -e
-        PROJECT_ID="${PROJECT_ID}"
-        KALI_VER="${_KALI_CLOUD_VERSION}"
-        FAMILY="kali-linux-cloud-genericcloud-amd64"
-        IMAGE_NAME="kali-linux-${KALI_VER}-cloud-genericcloud-amd64"
-        KALI_URL="https://kali.download/cloud-images/current/kali-linux-${KALI_VER}-cloud-genericcloud-amd64.tar.xz"
+        KALI_VER="${_KALI_VER}"
+        FAMILY="${_GCE_BASE_SOURCE_FAMILY}"
+        IMAGE_NAME="kali-linux-${_KALI_VER}-${_GCE_BASE_SOURCE_FAMILY}"
+        KALI_URL="https://kali.download/cloud-images/current/kali-linux-${_KALI_VER}-${_GCE_BASE_SOURCE_FAMILY}.tar.xz"
         GCS_IMPORT="gs://bah-machine-images/kali-import/${BUILD_ID}-disk.raw"
         if gcloud compute images describe-from-family "${FAMILY}" --project="${PROJECT_ID}" 2>/dev/null; then
           echo "Image family ${FAMILY} already exists. Skipping download/import from kali.download."
@@ -174,6 +172,7 @@ steps:
 
 logsBucket: 'gs://bah-build-logs/bah-kali-linux-img'
 serviceAccount: 'projects/gcp-asigbahgcp-nprd-47930/serviceAccounts/build-bah-kali-linux-img@gcp-asigbahgcp-nprd-47930.iam.gserviceaccount.com'
+projectId: 'gcp-asigbahgcp-nprd-47930'
 
 options:
   logging: GCS_ONLY

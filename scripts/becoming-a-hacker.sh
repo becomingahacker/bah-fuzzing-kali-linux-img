@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Becoming a Hacker installation script
 
 # HACK cmm - This script installs requisite software and tools for the Becoming

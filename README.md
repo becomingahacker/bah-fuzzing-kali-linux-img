@@ -8,6 +8,17 @@ Foundations.
 
 ## GCE Base Kali Image
 
+> [!NOTE]
+> **Cloud Build** can create this base image automatically:
+> - If the image family **`kali-linux-cloud-genericcloud-amd64`** is missing, the
+>   **`import-kali-generic`** step downloads the image from
+>   [kali.download/cloud-images/current/](https://kali.download/cloud-images/current/)
+>   (e.g. `kali-linux-2025.4-cloud-genericcloud-amd64.tar.xz`), extracts `disk.raw`,
+>   uploads it to GCS, and imports it into GCP as that family.
+> - If **`kali-linux-cloud-gce-amd64`** is missing, the **`create-gce-base`** step
+>   builds it from that generic image, then Packer runs. You only need the manual
+>   steps below when not using that pipeline or when debugging.
+
 > [!IMPORTANT]
 > These are manual steps you must do before starting the CloudBuild process to
 > make the image available for use with Google Compute Engine.  If the image

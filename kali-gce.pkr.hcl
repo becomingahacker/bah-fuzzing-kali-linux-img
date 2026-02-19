@@ -97,17 +97,17 @@ build {
   # These are files copied here, rather than in the cloud-init because we don't
   # want to do any YAML encoding/processing on them.
   provisioner "file" {
-    source      = "/workspace/setup.sh"
+    source      = "/workspace/scripts/setup.sh"
     destination = "/provision/setup.sh"
   }
 
   provisioner "file" {
-    source      = "/workspace/tweaks.sh"
+    source      = "/workspace/scripts/tweaks.sh"
     destination = "/provision/tweaks.sh"
   }
 
   provisioner "file" {
-    source      = "/workspace/becoming-a-hacker.sh"
+    source      = "/workspace/scripts/becoming-a-hacker.sh"
     destination = "/provision/becoming-a-hacker/becoming-a-hacker.sh"
   }
 

@@ -1,12 +1,14 @@
 #!/bin/bash
 
+# Setup script for Kali Linux
+# This script is used to setup the Kali Linux image to make it suitable for the
+# Becoming a Hacker Foundations labs and building a new pristine image.
+
 set -e
 set -x
 
 env
 
-# HACK cmm - Disable security.ubuntu.com so we don't get throttled
-#sed -i 's@deb http://security.ubuntu.com@# deb http://security.ubuntu.com@' /etc/apt/sources.list
 # Wait for possible auto updates to complete.  This may not be needed
 flock -w 120 /var/lib/apt/lists/lock -c 'echo waiting for lock'
 

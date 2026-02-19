@@ -1,6 +1,9 @@
 substitutions:
   _KALI_VER: '2025.4'
+  # Delete this image family if you want to build a new one from Offensive 
+  # Security's Kali Linux generic cloud image.
   _GCE_BASE_SOURCE_FAMILY: 'kali-linux-cloud-genericcloud-amd64'
+  # Delete this image family if you want to build a new one from scratch.
   _GCE_BASE_FAMILY: 'kali-linux-cloud-gce-amd64'
   # 'pristine' or 'tweaks' - determines the source image family and provision 
   # script, scripts/setup.sh or scripts/tweaks.sh
@@ -22,7 +25,7 @@ steps:
       KALI_URL="https://kali.download/cloud-images/kali-${_KALI_VER}/kali-linux-${_KALI_VER}-cloud-genericcloud-amd64.tar.xz"
       KALI_VERSION_DASHED="$(tr '.' '-' <<< "${_KALI_VER}")"
       GCS_IMPORT="gs://bah-machine-images/kali-import/${BUILD_ID}-disk.raw"
-      IMAGE_NAME="kali-linux-${KALI_VERSION_DASHED}-cloud-genericcloud-amd64"
+      IMAGE_NAME="kali-linux-${KALI_VERSION_DASHED}-$(date +%Y-%m-%d)-cloud-genericcloud-amd64"
 
       if gcloud compute images describe-from-family "${_GCE_SOURCE_FAMILY}" --project="${PROJECT_ID}" 2>/dev/null; then
         echo "Image family ${_GCE_SOURCE_FAMILY} already exists. Skipping GCE base image creation."
@@ -60,7 +63,7 @@ steps:
         --skip-os-adaptation \
         --description="Kali Linux ${_KALI_VER} generic cloud (imported from kali.download)"
 
-      echo 'Waiting for image import to complete (this may take 20-30 minutes)...'
+      echo 'Waiting for image import to complete. This may take 20-30 minutes...'
       for i in $$(seq 1 60); do
         STATUS=$(gcloud migration vms image-imports describe "${IMPORT_JOB_NAME}" --project="${PROJECT_ID}" --location="${LOCATION}" --format json | jq -r .recentImageImportJobs[0].state 2> /dev/null || echo "UNKNOWN")
         echo "Image import status: ${STATUS}"

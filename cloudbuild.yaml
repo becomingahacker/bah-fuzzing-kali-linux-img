@@ -187,3 +187,4 @@ projectId: 'gcp-asigbahgcp-nprd-47930'
 options:
   logging: GCS_ONLY
   logStreamingOption: STREAM_ON
+  automapSubstitutions: true

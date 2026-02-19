@@ -1,9 +1,11 @@
+substitutions:
+  - '_KALI_VER=2025.4'
+  - '_GCE_BASE_SOURCE_FAMILY=kali-linux-cloud-genericcloud-amd64'
+  - '_GCE_BASE_FAMILY=kali-linux-cloud-gce-amd64'
+
 steps:
   # Download from https://kali.download/cloud-images/current/ and import as GCE image when not already present.
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    substitutions:
-      - '_KALI_VER=2025.4'
-      - '_GCE_BASE_SOURCE_FAMILY=kali-linux-cloud-genericcloud-amd64'
     id: import-kali-generic
     entrypoint: 'bash'
     args:

@@ -15,10 +15,10 @@ steps:
       - |
         set -e
         PROJECT_ID="${PROJECT_ID}"
-        VERSION="${_KALI_CLOUD_VERSION}"
+        KALI_VER="${_KALI_CLOUD_VERSION}"
         FAMILY="kali-linux-cloud-genericcloud-amd64"
-        IMAGE_NAME="kali-linux-${VERSION}-cloud-genericcloud-amd64"
-        KALI_URL="https://kali.download/cloud-images/${VERSION}/kali-linux-${VERSION}-cloud-genericcloud-amd64.tar.xz"
+        IMAGE_NAME="kali-linux-${KALI_VER}-cloud-genericcloud-amd64"
+        KALI_URL="https://kali.download/cloud-images/current/kali-linux-${KALI_VER}-cloud-genericcloud-amd64.tar.xz"
         GCS_IMPORT="gs://bah-machine-images/kali-import/${BUILD_ID}-disk.raw"
         if gcloud compute images describe-from-family "${FAMILY}" --project="${PROJECT_ID}" 2>/dev/null; then
           echo "Image family ${FAMILY} already exists. Skipping download/import from kali.download."
@@ -47,7 +47,7 @@ steps:
           --os=debian-12 \
           --family="${FAMILY}" \
           --storage-location=us-east1 \
-          --description="Kali Linux ${VERSION} generic cloud (imported from kali.download)"
+          --description="Kali Linux ${KALI_VER} generic cloud (imported from kali.download)"
         echo "Removing temporary object ${GCS_IMPORT}..."
         gsutil -q rm "${GCS_IMPORT}" 2>/dev/null || true
         echo "Image ${IMAGE_NAME} imported and set as family ${FAMILY}."

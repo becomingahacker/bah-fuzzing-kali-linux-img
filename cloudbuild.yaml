@@ -20,8 +20,9 @@ steps:
       env 
 
       KALI_URL="https://kali.download/cloud-images/kali-${_KALI_VER}/kali-linux-${_KALI_VER}-cloud-genericcloud-amd64.tar.xz"
+      KALI_VERSION_DASHED="$(tr '.' '-' <<< "${_KALI_VER}")"
       GCS_IMPORT="gs://bah-machine-images/kali-import/${BUILD_ID}-disk.raw"
-      IMAGE_NAME="kali-linux-${_KALI_VER}-cloud-genericcloud-amd64"
+      IMAGE_NAME="kali-linux-${KALI_VERSION_DASHED}-cloud-genericcloud-amd64"
 
       if gcloud compute images describe-from-family "${_GCE_SOURCE_FAMILY}" --project="${PROJECT_ID}" 2>/dev/null; then
         echo "Image family ${_GCE_SOURCE_FAMILY} already exists. Skipping GCE base image creation."

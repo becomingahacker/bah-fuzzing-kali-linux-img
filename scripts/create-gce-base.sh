@@ -60,8 +60,6 @@ GROWROOT_EOF
     apt-get update
     apt-get install -y linux-image-amd64
 
-    # Next boot: Advanced options -> non-cloud kernel (submenu 1, entry 1)
-    grub-reboot "1>1" || true
     phase 1
     echo "Phase 1 done. Rebooting..."
     cloud-init clean -c all -r

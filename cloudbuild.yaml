@@ -128,7 +128,7 @@ steps:
         exit 1
       fi
       echo "Creating image from boot disk..."
-      gcloud compute images create "{IMAGE_NAME}" \
+      gcloud compute images create "${IMAGE_NAME}" \
         --project="${PROJECT_ID}" \
         --source-disk="${INSTANCE_NAME}" \
         --source-disk-zone="${ZONE}" \
@@ -136,7 +136,7 @@ steps:
         --storage-location=us-east1 \
         --description="${IMAGE_NAME}"
       echo "Deleting temporary instance and disk..."
-      gcloud compute instances delete "${INSTANCE_NAME}" --zone="${ZONE}" --project="${PROJECT_ID}" --delete-disks=boot -q
+      gcloud compute instances delete "${INSTANCE_NAME}" --zone="${ZONE}" --project="${PROJECT_ID}"
       echo "GCE base image ${IMAGE_NAME} created in family ${_GCE_BASE_FAMILY}."
     env:
       - 'LOCATION=$LOCATION'

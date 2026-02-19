@@ -46,9 +46,10 @@ steps:
       gsutil -q cp "${DISK_RAW}" "${GCS_IMPORT}"
       rm -f "${DISK_RAW}"
 
+      IMPORT_JOB_NAME="image-import-${BUILD_ID}"
       echo 'Importing image into GCP (this may take 15-30 minutes)...'
       # Kali Linux is not supported by the OS adaptation service, so we skip it.
-      gcloud migration vms image-imports create "${BUILD_ID}-image-import" \
+      gcloud migration vms image-imports create "${IMPORT_JOB_NAME}" \
         --source-file="${GCS_IMPORT}" \
         --image-name="${IMAGE_NAME}" \
         --project="${PROJECT_ID}" \
@@ -61,7 +62,7 @@ steps:
 
       echo "Waiting for image import to complete (this may take 20-30 minutes)..."
       for i in $$(seq 1 60); do
-        STATUS=$(gcloud migration vms image-imports describe "${BUILD_ID}-image-import" --project="${PROJECT_ID}" --location="${LOCATION}" --format json | jq -r .recentImageImportJobs[0].state 2> /dev/null || echo "UNKNOWN")
+        STATUS=$(gcloud migration vms image-imports describe "${IMPORT_JOB_NAME}" --project="${PROJECT_ID}" --location="${LOCATION}" --format json | jq -r .recentImageImportJobs[0].state 2> /dev/null || echo "UNKNOWN")
         echo "Image import status: ${STATUS}"
         if [ "${STATUS}" = "RUNNING" ]; then sleep 30; continue; fi
         break;

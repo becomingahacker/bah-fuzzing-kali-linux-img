@@ -6,7 +6,6 @@
 
 set -e
 set -x
-
 env
 
 # Wait for possible auto updates to complete.  This may not be needed

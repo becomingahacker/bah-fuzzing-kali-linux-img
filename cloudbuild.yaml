@@ -7,52 +7,58 @@ substitutions:
   _BUILD_TYPE: 'pristine'
   _CML_ENDPOINT: 'https://becomingahacker.com'
   _GS_IMAGE_PATH: 'gs://bah-machine-images/kali-linux'
-  _IMAGE_IMPORT_OS: 'debian-11'
 
 steps:
   # Download from https://kali.download/cloud-images/current/ and import as GCE image when not already present.
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: import-kali-generic
     script: |
-        #!/usr/bin/env bash
+      #!/usr/bin/env bash
 
-        set -e
-        set -x 
-        env
+      set -e
+      set -x 
+      env 
 
-        KALI_URL="https://kali.download/cloud-images/kali-${_KALI_VER}/kali-linux-${_KALI_VER}-cloud-genericcloud-amd64.tar.xz"
-        GCS_IMPORT="gs://bah-machine-images/kali-import/${BUILD_ID}-disk.raw"
-        if gcloud compute images describe-from-family "${FAMILY}" --project="${PROJECT_ID}" 2>/dev/null; then
-          echo "Image family ${FAMILY} already exists. Skipping download/import from kali.download."
-          exit 0
-        fi
-        echo "Installing xz-utils for tar extraction..."
-        apt-get update -qq && apt-get install -y -qq xz-utils curl
-        echo "Downloading Kali generic cloud image from ${KALI_URL}..."
-        curl -fsSL -o kali.tar.xz "${KALI_URL}"
-        echo "Extracting disk.raw from tarball..."
-        tar -xJf kali.tar.xz
-        rm kali.tar.xz
-        DISK_RAW="$(find . -name 'disk.raw' -type f | head -1)"
-        if [ -z "${DISK_RAW}" ] || [ ! -f "${DISK_RAW}" ]; then
-          echo "disk.raw not found in tarball. Contents:"
-          find . -type f
-          exit 1
-        fi
-        echo "Uploading disk image to ${GCS_IMPORT}..."
-        gsutil -q cp "${DISK_RAW}" "${GCS_IMPORT}"
-        rm -f "${DISK_RAW}"
-        echo "Importing image into GCP (this may take 15-30 minutes)..."
-        gcloud compute images import "${IMAGE_NAME}" \
-          --project="${PROJECT_ID}" \
-          --source-file="${GCS_IMPORT}" \
-          --os="${_IMAGE_IMPORT_OS}" \
-          --family="${_GCE_BASE_FAMILY}" \
-          --storage-location="${LOCATION}" \
-          --description="Kali Linux ${_KALI_VER} generic cloud (imported from kali.download)"
-        echo "Removing temporary object ${GCS_IMPORT}..."
-        gsutil -q rm "${GCS_IMPORT}" 2>/dev/null || true
-        echo "Image ${IMAGE_NAME} imported and set as family ${FAMILY}."
+      KALI_URL="https://kali.download/cloud-images/kali-${_KALI_VER}/kali-linux-${_KALI_VER}-cloud-genericcloud-amd64.tar.xz"
+      GCS_IMPORT="gs://bah-machine-images/kali-import/${BUILD_ID}-disk.raw"
+      IMAGE_NAME="kali-linux-${_KALI_VER}-cloud-genericcloud-amd64"
+
+      if gcloud compute images describe-from-family "${_GCE_SOURCE_FAMILY}" --project="${PROJECT_ID}" 2>/dev/null; then
+        echo "Image family ${_GCE_SOURCE_FAMILY} already exists. Skipping GCE base image creation."
+        exit 0
+      fi
+        
+      echo "Installing xz-utils for tar extraction..."
+      apt-get update -qq && apt-get install -y -qq xz-utils curl
+      echo "Downloading Kali generic cloud image from ${KALI_URL}..."
+      curl -fsSL -o kali.tar.xz "${KALI_URL}"
+      echo "Extracting disk.raw from tarball..."
+      tar -xJf kali.tar.xz
+      rm kali.tar.xz
+      DISK_RAW="$(find . -name 'disk.raw' -type f | head -1)"
+      if [ -z "${DISK_RAW}" ] || [ ! -f "${DISK_RAW}" ]; then
+        echo "disk.raw not found in tarball. Contents:"
+        find . -type f
+        exit 1
+      fi
+      echo "Uploading disk image to ${GCS_IMPORT}..."
+      gsutil -q cp "${DISK_RAW}" "${GCS_IMPORT}"
+      rm -f "${DISK_RAW}"
+
+      echo "Importing image into GCP (this may take 15-30 minutes)..."
+      gcloud migration vms image-imports create "${IMAGE_NAME}" \
+        --source-file="${GCS_IMPORT}" \
+        --image-name="${IMAGE_NAME}" \
+        --project="${PROJECT_ID}" \
+        --target-project="${PROJECT_ID}" \
+        --family-name="${_GCE_SOURCE_FAMILY}" \
+        --location="${LOCATION}" \
+        --single-region-storage \
+        --description="Kali Linux ${_KALI_VER} generic cloud (imported from kali.download)"
+
+      echo "Removing temporary object ${GCS_IMPORT}..."
+      gsutil -q rm "${GCS_IMPORT}" 2>/dev/null || true
+      echo "Image ${IMAGE_NAME} imported and set as family ${FAMILY}."
     env:
       - 'LOCATION=$LOCATION'
       - 'PROJECT_ID=$PROJECT_ID'

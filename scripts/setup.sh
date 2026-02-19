@@ -77,12 +77,12 @@ echo -e \"[Service]\nTimeoutStartSec=60sec\" > /etc/systemd/system/networking.se
 # Don't display message when automatically logging in
 touch /root/.hushlogin
 
-# FIXME cmm - Temporarily disable websploit for troubleshooting
 cd /provision/websploit
 git clone https://github.com/The-Art-of-Hacking/websploit.git
 cd websploit
 chmod u+x install.sh
-./install.sh
+# FIXME cmm - Temporarily disable websploit for troubleshooting
+#./install.sh
 
 chmod u+x /provision/becoming-a-hacker/becoming-a-hacker.sh
 /provision/becoming-a-hacker/becoming-a-hacker.sh

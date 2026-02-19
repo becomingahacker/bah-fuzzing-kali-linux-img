@@ -64,7 +64,7 @@ GROWROOT_EOF
     grub-reboot "1>1" || true
     phase 1
     echo "Phase 1 done. Rebooting..."
-    reboot
+    cloud-init clean -c all -r
     ;;
   1)
     echo "=== Phase 2: Remove cloud kernel ==="
@@ -72,7 +72,7 @@ GROWROOT_EOF
     apt-get remove --purge -y linux-image-*-cloud-amd64 || true
     phase 2
     echo "Phase 2 done. Rebooting..."
-    reboot
+    cloud-init clean -c all -r
     ;;
   2)
     echo "=== Phase 3: Final cleanup and shutdown ==="

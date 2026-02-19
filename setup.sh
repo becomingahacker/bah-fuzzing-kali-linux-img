@@ -31,14 +31,19 @@ apt-get install -y kali-desktop-xfce kali-linux-default pciutils lshw usbutils b
 systemctl disable blueman-mechanism.service
 
 # Install Docker
-apt-get install -y ca-certificates curl
-curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
-chmod a+r /etc/apt/keyrings/docker.asc
+# Add Docker's official GPG key:
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
 echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
-  bookworm stable" | \
-  tee /etc/apt/sources.list.d/docker.list
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # Install gcloud SDK, including Kubernetes
 curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
@@ -46,7 +51,23 @@ echo \
   "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt \
   cloud-sdk main" | \
   tee /etc/apt/sources.list.d/google-cloud-sdk.list
+apt-get update
 apt-get install -y google-cloud-cli google-cloud-cli-gke-gcloud-auth-plugin google-cloud-cli-kubectl-oidc kubectl
+
+apt-get install -y zenmap
+apt-get install -y tftpd-hpa
+cat > /etc/default/tftpd-hpa <<EOF
+# /etc/default/tftpd-hpa
+
+TFTP_USERNAME="nobody"
+TFTP_DIRECTORY="/srv/tftp"
+TFTP_ADDRESS=":69"
+TFTP_OPTIONS="--secure --create"
+
+EOF
+
+systemctl enable tftpd-hpa.service
+systemctl start tftpd-hpa.service
 
 # Make network timeout shorter to speed up boot if the network is unavailable
 mkdir -p /etc/systemd/system/networking.service.d/

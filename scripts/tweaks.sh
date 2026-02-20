@@ -48,4 +48,4 @@ cd websploit
 sed -i 's/print_banner/#print_banner/g' install.sh
 chmod u+x install.sh
 # FIXME cmm - Temporarily disable websploit for troubleshooting
-./install.sh
+#./install.sh

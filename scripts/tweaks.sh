@@ -38,7 +38,9 @@ apt-get install -y zenmap rdap
 userdel -f -r kali || true
 
 apt remove --purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || true
+apt install -y docker.io
 
+rm -rf /provision/websploit || true
 mkdir -vp /provision/websploit
 cd /provision/websploit
 git clone https://github.com/The-Art-of-Hacking/websploit.git

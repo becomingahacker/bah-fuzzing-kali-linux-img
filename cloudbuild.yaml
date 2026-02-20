@@ -11,7 +11,7 @@ substitutions:
   _CML_ENDPOINT: 'https://becomingahacker.com'
   _GS_IMAGE_PATH: 'gs://bah-machine-images/kali-linux'
   _GS_CML_IMAGE_PATH: 'gs://bah-libvirt-images-ue1/virl-base-images/kali-linux-new'
-  _GS_CML_IMAGE_DEFINITION_PATH: 'gs://bah-libvirt-images-ue1/virl-base-images/kali-linux-new.yaml'
+  _GS_CML_IMAGE_DEFINITION_PATH: 'gs://bah-libvirt-images-ue1/virl-base-images/kali-linux-new/kali-linux-new.yaml'
 
 steps:
   # Download from https://kali.download/cloud-images/current/ and import as GCE image when not already present.

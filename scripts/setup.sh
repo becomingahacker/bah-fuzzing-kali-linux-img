@@ -54,8 +54,7 @@ echo \
   tee /etc/apt/sources.list.d/google-cloud-sdk.list
 apt-get update
 apt-get install -y google-cloud-cli google-cloud-cli-gke-gcloud-auth-plugin google-cloud-cli-kubectl-oidc kubectl
-
-apt-get install -y zenmap rdap zenmap-kbx
+apt-get install -y zenmap rdap 
 
 apt remove --purge -y atftpd || true
 apt-get install -y tftpd-hpa

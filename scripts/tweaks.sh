@@ -15,4 +15,4 @@ apt-get upgrade -y
 
 apt remove --purge -y atftpd || true
 
-apt-get install -y zenmap rdap zenmap-kbx
+apt-get install -y zenmap rdap

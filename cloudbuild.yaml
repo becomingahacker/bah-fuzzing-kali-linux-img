@@ -1,13 +1,14 @@
 substitutions:
+  # 'pristine' or 'tweaks' - determines the source image family and provision 
+  # script, scripts/setup.sh or scripts/tweaks.sh
+  _BUILD_TYPE: 'tweaks'
+  # The Kali Linux version to use from https://kali.download/cloud-images/
   _KALI_VER: '2025.4'
   # Delete this image with this family if you want to build a new one from Offensive 
   # Security's Kali Linux generic cloud image.
   _GCE_BASE_SOURCE_FAMILY: 'kali-linux-cloud-genericcloud-amd64'
   # Delete this image with this image family if you want to build a new one from scratch.
   _GCE_BASE_FAMILY: 'kali-linux-cloud-gce-amd64'
-  # 'pristine' or 'tweaks' - determines the source image family and provision 
-  # script, scripts/setup.sh or scripts/tweaks.sh
-  _BUILD_TYPE: 'tweaks'
   _CML_ENDPOINT: 'https://becomingahacker.com'
   _GS_IMAGE_PATH: 'gs://bah-machine-images/kali-linux'
   _GS_CML_IMAGE_PATH: 'gs://bah-libvirt-images-ue1/virl-base-images/kali-linux-new'
@@ -98,6 +99,11 @@ steps:
       set -x
       env
 
+      if [ "$BUILD_TYPE" = "tweaks" ]; then
+        echo "Tweaks build type detected. Skipping GCE base image creation."
+        exit 0
+      fi
+
       # Only PROJECT_ID, LOCATION, BUILD_ID, _GCE_BASE_FAMILY, _GCE_BASE_SOURCE_FAMILY are Cloud Build substitutions
       ZONE="${LOCATION}-b"
       INSTANCE_NAME="kali-gce-base-${BUILD_ID}"
@@ -146,6 +152,7 @@ steps:
       - 'LOCATION=$LOCATION'
       - 'PROJECT_ID=$PROJECT_ID'
       - 'BUILD_ID=$BUILD_ID'
+      - 'BUILD_TYPE=$_BUILD_TYPE'
     timeout: '2400s'
 
   # This image can be made with cloud-builder/Dockerfile   

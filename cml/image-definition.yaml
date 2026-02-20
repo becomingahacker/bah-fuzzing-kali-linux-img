@@ -1,0 +1,8 @@
+id: kali-linux-new
+node_definition_id: kali-linux
+description: 'Newest KALI'
+label: kali-linux-new
+disk_image: DISK_IMAGE_NAME
+read_only: false
+disk_subfolder: kali-linux-new
+schema_version: 0.0.1

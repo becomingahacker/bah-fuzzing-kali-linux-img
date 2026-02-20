@@ -13,3 +13,6 @@ flock -w 120 /var/lib/apt/lists/lock -c 'echo waiting for lock'
 apt-get update
 apt-get upgrade -y
 
+apt remove --purge -y atftpd || true
+
+apt-get install -y zenmap rdap zenmap-kbx

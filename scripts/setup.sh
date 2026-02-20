@@ -55,7 +55,9 @@ echo \
 apt-get update
 apt-get install -y google-cloud-cli google-cloud-cli-gke-gcloud-auth-plugin google-cloud-cli-kubectl-oidc kubectl
 
-apt-get install -y zenmap
+apt-get install -y zenmap rdap zenmap-kbx
+
+apt remove --purge -y atftpd || true
 apt-get install -y tftpd-hpa
 cat > /etc/default/tftpd-hpa <<EOF
 # /etc/default/tftpd-hpa

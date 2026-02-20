@@ -31,6 +31,9 @@ apt-get install -y kali-desktop-xfce kali-linux-default pciutils lshw usbutils b
 # Disable Bluetooth
 systemctl disable blueman-mechanism.service
 
+# Enable serial console on ttyS1
+systemctl enable --now 'getty@ttyS1'
+
 # Install Docker
 # Add Docker's official GPG key:
 sudo apt-get update
@@ -68,8 +71,10 @@ TFTP_OPTIONS="--secure --create"
 
 EOF
 
-systemctl enable tftpd-hpa.service
-systemctl start tftpd-hpa.service
+mkdir -vp /srv/tftp
+chown -R nobody:nogroup /srv/tftp
+
+systemctl enable --now tftpd-hpa.service
 
 # Make network timeout shorter to speed up boot if the network is unavailable
 mkdir -p /etc/systemd/system/networking.service.d/
@@ -78,9 +83,23 @@ echo -e \"[Service]\nTimeoutStartSec=60sec\" > /etc/systemd/system/networking.se
 # Don't display message when automatically logging in
 touch /root/.hushlogin
 
+# Ensure cisco user exists with a proper home directory so X/lightdm and
+# gnome-keyring can write .Xauthority and ~/.local/share/keyrings.
+if ! getent passwd cisco >/dev/null 2>&1; then
+  useradd -m -s /bin/bash -G users,adm,sudo cisco
+fi
+if [ -d /home/cisco ]; then
+  chown -R cisco:cisco /home/cisco
+  chmod 755 /home/cisco
+fi
+# Lock until deploy-time cloud-init sets password (e.g. CML node-definition)
+passwd -l cisco 2>/dev/null || true
+
+mkdir -vp /provision/websploit
 cd /provision/websploit
 git clone https://github.com/The-Art-of-Hacking/websploit.git
 cd websploit
+sed -i 's/print_banner/#print_banner/g' install.sh
 chmod u+x install.sh
 # FIXME cmm - Temporarily disable websploit for troubleshooting
 #./install.sh
@@ -97,6 +116,8 @@ sudo rm /etc/hostname
 sudo rm /root/.zsh_history
 sudo rm /root/.bash_history
 sudo truncate -s 0 /root/.ssh/authorized_keys
+
+sudo userdel -f -r kali || true
 
 # Clean up packages that can be removed
 apt-get autoremove --purge -y

@@ -72,10 +72,12 @@ configuration:
               gecos: Cisco
               groups: users, adm, sudo
               plain_text_passwd: cisco
-              lock_passwd: true
+              lock_passwd: false
               shell: /bin/bash
 
           runcmd:
-            - dpkg-reconfigure xorg
+            - [ chown, -R, cisco:cisco, /home/cisco ]
+            - [ chmod, 755, /home/cisco ]
+            - dpkg-reconfigure -f noninteractive xorg
         editable: true
 schema_version: 0.0.1

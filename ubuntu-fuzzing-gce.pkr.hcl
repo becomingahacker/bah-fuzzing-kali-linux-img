@@ -27,14 +27,26 @@ variable "service_account_email" {
 
 variable "source_image_family" {
     type        = string
-    default     = "kali-linux-cloud-gce-amd64"
-    description = "Parent image family, e.g. kali-linux-cloud-gce-amd64"
+    default     = "ubuntu-minimal-2404-lts-amd64"
+    description = "Parent image family, e.g. ubuntu-minimal-2404-lts-amd64"
 }
 
 variable "provision_script" {
     type        = string
     default     = "setup.sh"
     description = "Provisioning script"
+}
+
+variable "output_image_family" {
+    type        = string
+    default     = "ubuntu-fuzzing-cml-amd64"
+    description = "Output image family name"
+}
+
+variable "output_image_name_prefix" {
+    type        = string
+    default     = "ubuntu-fuzzing"
+    description = "Output image name prefix"
 }
 
 locals {
@@ -53,14 +65,11 @@ locals {
   }
 }
 
-source "googlecompute" "kali-linux-cloud-cml-amd64" {
+source "googlecompute" "fuzzing-workshop-image" {
   project_id              = var.project_id
-  # Pristine image from base GCE image family
   source_image_family     = var.source_image_family
-  # For tweaks to existing image we've already built
-  #source_image_family     = "kali-linux-cloud-cml-amd64"
-  image_family            = "kali-linux-cloud-cml-amd64"
-  image_name              = "kali-linux-{{timestamp}}-cloud-cml-amd64"
+  image_family            = var.output_image_family
+  image_name              = "${var.output_image_name_prefix}-{{timestamp}}"
 
   zone                    = var.zone
   machine_type            = "n2-highcpu-8"
@@ -85,14 +94,7 @@ source "googlecompute" "kali-linux-cloud-cml-amd64" {
 }
 
 build {
-  sources = ["sources.googlecompute.kali-linux-cloud-cml-amd64"]
-
-  provisioner "shell" {
-    inline = [ 
-      "mkdir -vp /provision/websploit",
-      "mkdir -vp /provision/becoming-a-hacker" 
-    ]
-  }
+  sources = ["sources.googlecompute.fuzzing-workshop-image"]
 
   # These are files copied here, rather than in the cloud-init because we don't
   # want to do any YAML encoding/processing on them.
@@ -104,11 +106,6 @@ build {
   provisioner "file" {
     source      = "/workspace/scripts/tweaks.sh"
     destination = "/provision/tweaks.sh"
-  }
-
-  provisioner "file" {
-    source      = "/workspace/scripts/becoming-a-hacker.sh"
-    destination = "/provision/becoming-a-hacker/becoming-a-hacker.sh"
   }
 
   # Let cloud-init finish before running the

@@ -1,6 +1,6 @@
-id: kali-linux
+id: ubuntu-fuzzing
 general:
-  description: Kali Linux with Xfce Desktop Environment and Fuzzing Tools
+  description: Ubuntu Fuzzing image with desktop environment and fuzzing tools
   nature: server
   read_only: false
 device:
@@ -14,10 +14,10 @@ device:
     default_count: 1
 ui:
   visible: true
-  label_prefix: kali-
+  label_prefix: ubuntu-
   icon: host
-  label: Kali Linux
-  description: Kali Linux with Xfce Desktop Environment and Fuzzing Tools
+  label: Ubuntu Fuzzing
+  description: Ubuntu Fuzzing image with desktop environment and fuzzing tools
 sim:
   linux_native:
     libvirt_domain_driver: kvm
@@ -57,13 +57,13 @@ configuration:
     files:
       - name: meta-data
         content: |-
-          instance-id: kali
-          local-hostname: kali
+          instance-id: ubuntu-fuzzing
+          local-hostname: ubuntu-fuzzing
         editable: false
       - name: user-data
         content: |-
           #cloud-config
-          hostname: kali-default
+          hostname: ubuntu-fuzzing-default
           manage_etc_hosts: true
 
           users:

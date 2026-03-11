@@ -1,162 +1,20 @@
 substitutions:
-  # 'pristine' or 'tweaks' - determines the source image family and provision 
-  # script, scripts/setup.sh or scripts/tweaks.sh
+  # 'pristine' or 'tweaks' - determines source family and provisioning script.
   _BUILD_TYPE: 'pristine'
-  # The Kali Linux version to use from https://kali.download/cloud-images/
-  _KALI_VER: '2025.4'
-  # Delete this image with this family if you want to build a new one from Offensive 
-  # Security's Kali Linux generic cloud image.
-  _GCE_BASE_SOURCE_FAMILY: 'kali-linux-cloud-genericcloud-amd64'
-  # Delete this image with this image family if you want to build a new one from scratch.
-  _GCE_BASE_FAMILY: 'kali-linux-cloud-gce-amd64'
+  # Public Ubuntu family used as immutable base for pristine builds.
+  _BASE_IMAGE_FAMILY: 'ubuntu-minimal-2404-lts-amd64'
+  # Family where Packer publishes the workshop image.
+  _OUTPUT_IMAGE_FAMILY: 'ubuntu-fuzzing-cml-amd64'
+  # Name prefix used when creating images.
+  _OUTPUT_IMAGE_NAME_PREFIX: 'ubuntu-fuzzing'
   _CML_ENDPOINT: 'https://becomingahacker.com'
-  _GS_IMAGE_PATH: 'gs://bah-machine-images/kali-linux'
-  _GS_CML_IMAGE_PATH: 'gs://bah-libvirt-images-ue1/virl-base-images/kali-linux-fuzzing'
-  _GS_CML_IMAGE_DEFINITION_PATH: 'gs://bah-libvirt-images-ue1/virl-base-images/kali-linux-fuzzing/kali-linux-fuzzing.yaml'
+  _GS_IMAGE_PATH: 'gs://bah-machine-images/ubuntu-fuzzing'
+  _GS_CML_IMAGE_PATH: 'gs://bah-libvirt-images-ue1/virl-base-images/ubuntu-fuzzing'
+  _GS_CML_IMAGE_DEFINITION_PATH: 'gs://bah-libvirt-images-ue1/virl-base-images/ubuntu-fuzzing/ubuntu-fuzzing.yaml'
 
 steps:
-  # Download from https://kali.download/cloud-images/current/ and import as GCE image when not already present.
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: import-kali-generic
-    script: |
-      #!/usr/bin/env bash
-
-      set -e
-      set -x 
-      env 
-
-      KALI_URL="https://kali.download/cloud-images/kali-${_KALI_VER}/kali-linux-${_KALI_VER}-cloud-genericcloud-amd64.tar.xz"
-      KALI_VERSION_DASHED="$(tr '.' '-' <<< "${_KALI_VER}")"
-      GCS_IMPORT="gs://bah-machine-images/kali-import/${BUILD_ID}-disk.raw"
-      IMAGE_NAME="kali-linux-${KALI_VERSION_DASHED}-$(date +%Y-%m-%d)-cloud-genericcloud-amd64"
-
-      if gcloud compute images describe-from-family "${_GCE_BASE_SOURCE_FAMILY}" --project="${PROJECT_ID}" 2>/dev/null; then
-        echo "Image family ${_GCE_BASE_SOURCE_FAMILY} already exists. Skipping GCE base image creation."
-        exit 0
-      fi
-        
-      echo "Installing xz-utils for tar extraction..."
-      apt-get update -qq && apt-get install -y -qq xz-utils curl jq
-      echo "Downloading Kali generic cloud image from ${KALI_URL}..."
-      curl -fsSL -o kali.tar.xz "${KALI_URL}"
-      echo "Extracting disk.raw from tarball..."
-      tar -xJf kali.tar.xz
-      rm kali.tar.xz
-      DISK_RAW="$(find . -name 'disk.raw' -type f | head -1)"
-      if [ -z "${DISK_RAW}" ] || [ ! -f "${DISK_RAW}" ]; then
-        echo "disk.raw not found in tarball. Contents:"
-        find . -type f
-        exit 1
-      fi
-      echo "Uploading disk image to ${GCS_IMPORT}..."
-      gsutil -q cp "${DISK_RAW}" "${GCS_IMPORT}"
-      rm -f "${DISK_RAW}"
-
-      IMPORT_JOB_NAME="image-import-${BUILD_ID}"
-      echo 'Importing image into GCP.  This may take 15-30 minutes...'
-      # Kali Linux is not supported by the OS adaptation service, so we skip it.
-      gcloud migration vms image-imports create "${IMPORT_JOB_NAME}" \
-        --source-file="${GCS_IMPORT}" \
-        --image-name="${IMAGE_NAME}" \
-        --project="${PROJECT_ID}" \
-        --target-project="${PROJECT_ID}" \
-        --family-name="${_GCE_BASE_SOURCE_FAMILY}" \
-        --location="${LOCATION}" \
-        --single-region-storage \
-        --skip-os-adaptation \
-        --description="Kali Linux ${_KALI_VER} generic cloud (imported from kali.download)"
-
-      echo 'Waiting for image import to complete. This may take 20-30 minutes...'
-      for i in $(seq 1 60); do
-        STATUS=$(gcloud migration vms image-imports describe "${IMPORT_JOB_NAME}" --project="${PROJECT_ID}" --location="${LOCATION}" --format json | jq -r .recentImageImportJobs[0].state 2> /dev/null || echo "UNKNOWN")
-        echo "Image import status: ${STATUS}"
-        if [ "${STATUS}" = "SUCCEEDED" ]; then break; fi
-        if [ "${STATUS}" != "RUNNING" ]; then echo "Unexpected status: ${STATUS}"; exit 1; fi
-        sleep 30
-      done
-
-      if [ "${STATUS}" != "SUCCEEDED" ]; then
-        echo "Image import failed. Check output."
-        exit 1
-      fi
-
-      echo "Removing temporary object ${GCS_IMPORT}..."
-      gsutil -q rm "${GCS_IMPORT}" 2>/dev/null || true
-      echo "Image ${IMAGE_NAME} imported and set as family ${_GCE_BASE_SOURCE_FAMILY}."
-    env:
-      - 'LOCATION=$LOCATION'
-      - 'PROJECT_ID=$PROJECT_ID'
-      - 'BUILD_ID=$BUILD_ID'
-      - 'APT_OPTS="-o Dpkg::Options::=--force-confmiss -o Dpkg::Options::=--force-confnew -o DPkg::Progress-Fancy=0 -o APT::Color=0"'
-    timeout: '3600s'
-
-  # Create GCE base image for Packer when not already present (README: "GCE Base Kali Image").
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: create-gce-base
-    script: |
-      #!/usr/bin/env bash
-      set -e
-      set -x
-      env
-
-      if [ "$BUILD_TYPE" = "tweaks" ]; then
-        echo "Tweaks build type detected. Skipping GCE base image creation."
-        exit 0
-      fi
-
-      # Only PROJECT_ID, LOCATION, BUILD_ID, _GCE_BASE_FAMILY, _GCE_BASE_SOURCE_FAMILY are Cloud Build substitutions
-      ZONE="${LOCATION}-b"
-      INSTANCE_NAME="kali-gce-base-${BUILD_ID}"
-      KALI_VERSION_DASHED="$(tr '.' '-' <<< "${_KALI_VER}")"
-      IMAGE_NAME="kali-linux-${KALI_VERSION_DASHED}-$(date +%Y-%m-%d)-cloud-gce-amd64"
-      if gcloud compute images describe-from-family "${_GCE_BASE_FAMILY}" --project="${PROJECT_ID}" --location="${LOCATION}" 2>/dev/null; then
-        echo "Image family ${_GCE_BASE_FAMILY} already exists. Skipping GCE base image creation."
-        exit 0
-      fi
-      echo "Creating VM to build GCE base image from family ${_GCE_BASE_SOURCE_FAMILY}..."
-      gcloud compute instances create "${INSTANCE_NAME}" \
-        --project="${PROJECT_ID}" \
-        --zone="${ZONE}" \
-        --image-family="${_GCE_BASE_SOURCE_FAMILY}" \
-        --machine-type=e2-medium \
-        --metadata-from-file=user-data=/workspace/scripts/create-gce-base.sh \
-        --metadata=serial-port-enable=TRUE \
-        --scopes=cloud-platform \
-        --service-account=${SERVICE_ACCOUNT_EMAIL}
-
-      echo "Waiting for VM to complete startup script and shut down (this may take 20-30 minutes)..."
-      for i in $(seq 1 60); do
-        STATUS=$(gcloud compute instances describe "${INSTANCE_NAME}" --zone="${ZONE}" --project="${PROJECT_ID}" --format='value(status)' 2>/dev/null || echo "UNKNOWN")
-        echo "Instance status: ${STATUS}"
-        if [ "${STATUS}" = "TERMINATED" ]; then break; fi
-        if [ "${STATUS}" != "RUNNING" ]; then echo "Unexpected status: ${STATUS}"; exit 1; fi
-        sleep 30
-      done
-      if [ "${STATUS}" != "TERMINATED" ]; then
-        echo "VM did not terminate in time. Check serial console output."
-        exit 1
-      fi
-      echo "Creating image from boot disk..."
-      gcloud compute images create "${IMAGE_NAME}" \
-        --project="${PROJECT_ID}" \
-        --source-disk="${INSTANCE_NAME}" \
-        --source-disk-zone="${ZONE}" \
-        --family="${_GCE_BASE_FAMILY}" \
-        --storage-location=us-east1 \
-        --description="${IMAGE_NAME}" \
-        --architecture=X86_64
-      echo "Deleting temporary instance and disk..."
-      gcloud compute instances delete "${INSTANCE_NAME}" --zone="${ZONE}" --project="${PROJECT_ID}"
-      echo "GCE base image ${IMAGE_NAME} created in family ${_GCE_BASE_FAMILY}."
-    env:
-      - 'LOCATION=$LOCATION'
-      - 'PROJECT_ID=$PROJECT_ID'
-      - 'BUILD_ID=$BUILD_ID'
-      - 'BUILD_TYPE=$_BUILD_TYPE'
-    timeout: '2400s'
-
-  # This image can be made with cloud-builder/Dockerfile   
-  - name: 'us-east1-docker.pkg.dev/gcp-asigbahgcp-nprd-47930/bah-builders/bah-kali-linux-img'
+  # Build image with Packer using Ubuntu family as source.
+  - name: 'us-east1-docker.pkg.dev/gcp-asigbahgcp-nprd-47930/bah-builders/bah-ubuntu-fuzzing-img'
     script: |
       #!/usr/bin/env bash
 
@@ -168,10 +26,10 @@ steps:
       cat /etc/default/locale
 
       if [ "$BUILD_TYPE" = "pristine" ]; then
-        SOURCE_IMAGE_FAMILY="kali-linux-cloud-gce-amd64"
+        SOURCE_IMAGE_FAMILY="${BASE_IMAGE_FAMILY}"
         PROVISION_SCRIPT="setup.sh"
       elif [ "$BUILD_TYPE" = "tweaks" ]; then
-        SOURCE_IMAGE_FAMILY="kali-linux-cloud-cml-amd64"
+        SOURCE_IMAGE_FAMILY="${OUTPUT_IMAGE_FAMILY}"
         PROVISION_SCRIPT="tweaks.sh"
       else
         echo "Invalid build type: $_BUILD_TYPE"
@@ -180,24 +38,28 @@ steps:
 
       # SSH key pair for Packer.  Will be removed after build.
       mkdir -vp secrets
-      ssh-keygen -t ed25519 -f secrets/id_ed25519 -C "root@kali" -N ""
+      ssh-keygen -t ed25519 -f secrets/id_ed25519 -C "root@ubuntu" -N ""
 
-      # Build Kali Linux image with Packer
-      packer init kali-gce.pkr.hcl
+      # Build Ubuntu workshop image with Packer
+      packer init ubuntu-fuzzing-gce.pkr.hcl
       packer validate \
         -var "service_account_email=$SERVICE_ACCOUNT_EMAIL" \
         -var "zone=$ZONE" \
         -var "project_id=$PROJECT_ID" \
         -var "source_image_family=$SOURCE_IMAGE_FAMILY" \
         -var "provision_script=$PROVISION_SCRIPT" \
-        kali-gce.pkr.hcl
+        -var "output_image_family=$OUTPUT_IMAGE_FAMILY" \
+        -var "output_image_name_prefix=$OUTPUT_IMAGE_NAME_PREFIX" \
+        ubuntu-fuzzing-gce.pkr.hcl
       packer build \
         -var "service_account_email=$SERVICE_ACCOUNT_EMAIL" \
         -var "zone=$ZONE" \
         -var "project_id=$PROJECT_ID" \
         -var "source_image_family=$SOURCE_IMAGE_FAMILY" \
         -var "provision_script=$PROVISION_SCRIPT" \
-        kali-gce.pkr.hcl
+        -var "output_image_family=$OUTPUT_IMAGE_FAMILY" \
+        -var "output_image_name_prefix=$OUTPUT_IMAGE_NAME_PREFIX" \
+        ubuntu-fuzzing-gce.pkr.hcl
 
       if [ -f /workspace/manifest.json ]; then
         jq . /workspace/manifest.json
@@ -218,12 +80,14 @@ steps:
       fi
 
     env:
-      - 'KALI_VERSION=$_KALI_VER'
       - 'CML_ENDPOINT=$_CML_ENDPOINT'
       - 'GS_IMAGE_PATH=$_GS_IMAGE_PATH'
       - 'GS_CML_IMAGE_PATH=$_GS_CML_IMAGE_PATH'
       - 'GS_CML_IMAGE_DEFINITION_PATH=$_GS_CML_IMAGE_DEFINITION_PATH'
       - 'BUILD_TYPE=$_BUILD_TYPE'
+      - 'BASE_IMAGE_FAMILY=$_BASE_IMAGE_FAMILY'
+      - 'OUTPUT_IMAGE_FAMILY=$_OUTPUT_IMAGE_FAMILY'
+      - 'OUTPUT_IMAGE_NAME_PREFIX=$_OUTPUT_IMAGE_NAME_PREFIX'
       - 'APT_OPTS="-o Dpkg::Options::=--force-confmiss -o Dpkg::Options::=--force-confnew -o DPkg::Progress-Fancy=0 -o APT::Color=0"'
       - 'DEBIAN_FRONTEND=noninteractive'
       - 'TZ=Etc/UTC'
@@ -233,8 +97,8 @@ steps:
       - 'ZONE=$LOCATION-b'
       - 'SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_EMAIL'
 
-logsBucket: 'gs://bah-build-logs/bah-kali-linux-img'
-serviceAccount: 'projects/gcp-asigbahgcp-nprd-47930/serviceAccounts/build-bah-kali-linux-img@gcp-asigbahgcp-nprd-47930.iam.gserviceaccount.com'
+logsBucket: 'gs://bah-build-logs/bah-ubuntu-fuzzing-img'
+serviceAccount: 'projects/gcp-asigbahgcp-nprd-47930/serviceAccounts/build-bah-ubuntu-fuzzing-img@gcp-asigbahgcp-nprd-47930.iam.gserviceaccount.com'
 
 options:
   logging: GCS_ONLY

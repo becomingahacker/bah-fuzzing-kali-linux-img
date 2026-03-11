@@ -14,7 +14,7 @@ substitutions:
 
 steps:
   # Build image with Packer using Ubuntu family as source.
-  - name: 'us-east1-docker.pkg.dev/gcp-asigbahgcp-nprd-47930/bah-builders/bah-ubuntu-fuzzing-img'
+  - name: 'us-east1-docker.pkg.dev/gcp-asigbahgcp-nprd-47930/bah-builders/bah-kali-linux-img'
     script: |
       #!/usr/bin/env bash
 
@@ -97,8 +97,8 @@ steps:
       - 'ZONE=$LOCATION-b'
       - 'SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_EMAIL'
 
-logsBucket: 'gs://bah-build-logs/bah-ubuntu-fuzzing-img'
-serviceAccount: 'projects/gcp-asigbahgcp-nprd-47930/serviceAccounts/build-bah-ubuntu-fuzzing-img@gcp-asigbahgcp-nprd-47930.iam.gserviceaccount.com'
+logsBucket: 'gs://bah-build-logs/bah-kali-linux-img'
+serviceAccount: 'projects/gcp-asigbahgcp-nprd-47930/serviceAccounts/build-bah-kali-linux-img@gcp-asigbahgcp-nprd-47930.iam.gserviceaccount.com'
 
 options:
   logging: GCS_ONLY

@@ -1,6 +1,6 @@
 id: kali-linux
 general:
-  description: Kali Linux with Xfce Desktop Environment
+  description: Kali Linux with Xfce Desktop Environment and Fuzzing Tools
   nature: server
   read_only: false
 device:
@@ -17,7 +17,7 @@ ui:
   label_prefix: kali-
   icon: host
   label: Kali Linux
-  description: Kali Linux with Xfce Desktop Environment
+  description: Kali Linux with Xfce Desktop Environment and Fuzzing Tools
 sim:
   linux_native:
     libvirt_domain_driver: kvm

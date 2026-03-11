@@ -1,8 +1,8 @@
-id: kali-linux-new
+id: kali-linux-fuzzing
 node_definition_id: kali-linux
-description: 'Newest KALI'
-label: kali-linux-new
+description: 'Kali Linux with Xfce Desktop Environment and Fuzzing Tools'
+label: kali-linux-fuzzing
 disk_image: DISK_IMAGE_NAME
 read_only: false
-disk_subfolder: kali-linux-new
+disk_subfolder: kali-linux-fuzzing
 schema_version: 0.0.1

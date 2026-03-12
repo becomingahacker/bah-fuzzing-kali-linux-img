@@ -80,6 +80,7 @@ source "googlecompute" "fuzzing-workshop-image" {
     "us-east1",
   ]
 
+  use_iap: true
   ssh_username            = "root"
   ssh_private_key_file    = "secrets/id_ed25519"
   service_account_email   = var.service_account_email

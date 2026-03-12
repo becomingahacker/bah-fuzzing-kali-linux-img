@@ -131,7 +131,6 @@ build {
       fi
       
       echo "Starting main provisioning script..."
-      ls -Al /provision
       chmod u+x /provision/${var.provision_script}
       /provision/${var.provision_script}
     EOF

@@ -71,7 +71,7 @@ source $HOME/.cargo/env
 git clone https://github.com/ispras/casr.git /tmp/casr
 cd /tmp/casr
 cargo update && cargo build --release && cp -r target/release/* /usr/local/bin/
-rm -rf /tmp/casr
+cd / && rm -rf /tmp/casr
 
 bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
 
@@ -81,6 +81,7 @@ git clone https://github.com/snort3/libdaq.git /tmp/libdaq \
     && ./configure --prefix=/usr \
     && make -j$(nproc) \
     && make install \
+    && cd / \
     && rm -rf /tmp/libdaq
 
 # Build and install AFLplusplus
@@ -97,6 +98,7 @@ git submodule update --init
 make distrib NO_CORESIGHT=1 NO_NYX=1 PERFORMANCE=1
 make install NO_CORESIGHT=1 NO_NYX=1 PERFORMANCE=1
 afl-system-config
+cd /
 
 # Ensure cisco user exists with a proper home directory so X/lightdm and
 # gnome-keyring can write .Xauthority and ~/.local/share/keyrings.

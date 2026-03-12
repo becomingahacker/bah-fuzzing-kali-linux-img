@@ -110,11 +110,6 @@ build {
     destination = "/provision/"
   }
 
-  provisioner "file" {
-    source      = "/workspace/scripts/tweaks.sh"
-    destination = "/provision/"
-  }
-
   # Let cloud-init finish before running the
   # main provisioning script.  If cloud-init fails,
   # output the log and stop the build.

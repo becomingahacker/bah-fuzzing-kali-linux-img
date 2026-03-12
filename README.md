@@ -8,10 +8,7 @@ Foundations.
 
 ## Creating a Kali Linux Image
 
-* Edit `scripts/setup.sh` or `scripts/tweaks.sh` with your desired changes.
-* Edit `cloudbuild.yaml` and change the `_BUILD_TYPE` to `pristine` or `tweaks`.
-  Depending on the setting, either `scripts/setup.sh` or `scripts/tweaks.sh`
-  will be run by Packer.
+* Edit `scripts/setup.sh` with your desired changes. It will be run by Packer.
 * Commit and push this repository and cloud-build will run.
 
 ## Troubleshooting

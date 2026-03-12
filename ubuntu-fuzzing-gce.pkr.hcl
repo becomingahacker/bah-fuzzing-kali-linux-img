@@ -97,16 +97,22 @@ source "googlecompute" "fuzzing-workshop-image" {
 build {
   sources = ["sources.googlecompute.fuzzing-workshop-image"]
 
+  provisioner "shell" {
+    inline = [
+      "mkdir -p /provision"
+    ]
+  }
+
   # These are files copied here, rather than in the cloud-init because we don't
   # want to do any YAML encoding/processing on them.
   provisioner "file" {
     source      = "/workspace/scripts/setup.sh"
-    destination = "/provision/setup.sh"
+    destination = "/provision/"
   }
 
   provisioner "file" {
     source      = "/workspace/scripts/tweaks.sh"
-    destination = "/provision/tweaks.sh"
+    destination = "/provision/"
   }
 
   # Let cloud-init finish before running the

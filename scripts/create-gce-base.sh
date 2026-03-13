@@ -1,5 +1,5 @@
 #!/bin/bash
-# Creates GCE base image from Kali generic cloud image (README "GCE Base Kali Image").
+# Creates GCE base image from ubuntu-minimal-2404-lts-amd64
 # Runs in phases with reboots; state is stored in /root/.gce-base-phase.
 
 set -e

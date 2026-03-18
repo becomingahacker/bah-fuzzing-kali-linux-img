@@ -1,6 +1,6 @@
 id: ubuntu-fuzzing
 node_definition_id: ubuntu-fuzzing
-description: 'Ubuntu Fuzzing image with desktop environment and fuzzing tools'
+description: 'Ubuntu Fuzzing image with fuzzing tools'
 label: ubuntu-fuzzing
 disk_image: DISK_IMAGE_NAME
 read_only: false

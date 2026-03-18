@@ -1,6 +1,6 @@
 id: ubuntu-fuzzing
 general:
-  description: Ubuntu Fuzzing image with desktop environment and fuzzing tools
+  description: Ubuntu Fuzzing image with fuzzing tools
   nature: server
   read_only: false
 device:
@@ -17,7 +17,7 @@ ui:
   label_prefix: ubuntu-
   icon: host
   label: Ubuntu Fuzzing
-  description: Ubuntu Fuzzing image with desktop environment and fuzzing tools
+  description: Ubuntu Fuzzing image with fuzzing tools
 sim:
   linux_native:
     libvirt_domain_driver: kvm

@@ -2,7 +2,7 @@
 
 # Tweaks script for Ubuntu Linux
 # This script is used to tweak the Ubuntu 24.04 Linux image to make it suitable for the
-# Hands-On Fuzzing Workshop without rebuilding an entire new image.
+# Hands-On Fuzzing Workshop.
 
 set -euxo pipefail
 env

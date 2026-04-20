@@ -4,5 +4,4 @@ description: 'Ubuntu Fuzzing image with fuzzing tools'
 label: ubuntu-fuzzing
 disk_image: DISK_IMAGE_NAME
 read_only: false
-disk_subfolder: ubuntu-fuzzing
 schema_version: 0.0.1

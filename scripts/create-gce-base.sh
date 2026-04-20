@@ -19,6 +19,7 @@ get_phase() { cat "$PHASE_FILE" 2>/dev/null || echo "0"; }
 case "$(get_phase)" in
   0)
     echo "=== Phase 1: Disable cloud-init network, fix growroot, grub, install kernel ==="
+    touch /etc/cloud/cloud-init.disabled
     mkdir -p /etc/cloud/cloud.cfg.d
     printf '%s\n' 'network: {config: disabled}' > /etc/cloud/cloud.cfg.d/99_disable_networking_config.cfg
     rm -f /etc/network/interfaces.d/50-cloud-init

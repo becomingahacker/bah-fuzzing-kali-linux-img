@@ -80,4 +80,11 @@ configuration:
             - [ chmod, 755, /home/cisco ]
             - dpkg-reconfigure -f noninteractive xorg
         editable: true
+      - name: network-config
+        content: |-
+          version: 2
+          ethernets:
+            eth0:
+              dhcp4: true
+        editable: true
 schema_version: 0.0.1

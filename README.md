@@ -26,11 +26,8 @@ tofu destroy -target module.pod
 
 This will destroy the pods, and **leave the users, passwords and groups alone**.
 
-```
-gcloud compute ssh cml-controller --tunnel-through-iap --plain --ssh-flag='-p1122'
+```bash
+gcloud compute ssh cml-controller  --project=gcp-asigbahgcp-nprd-47930 --zone=us-east1-b --tunnel-through-iap --ssh-flag='-p 1122'
 sudo -i
-
-journalctl -f &
-systemctl stop virl2.target
-systemctl start virl2.target
+./refresh.sh
 ```

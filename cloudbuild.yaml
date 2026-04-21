@@ -29,6 +29,8 @@ steps:
       # SSH key pair for Packer.  Will be removed after build.
       mkdir -vp secrets
       ssh-keygen -t ed25519 -f secrets/id_ed25519 -C "root@ubuntu" -N ""
+      # Install numpy to speed up IAP tunneling
+      $(gcloud info --format="value(basic.python_location)") -m pip install numpy
 
       # Build Ubuntu workshop image with Packer
       packer init ubuntu-fuzzing-gce.pkr.hcl
@@ -64,7 +66,7 @@ steps:
           --log-location ${GS_IMAGE_PATH} \
           --export-format qcow2 \
           --destination-uri ${GS_CML_IMAGE_PATH}/${IMAGE}.qcow2
-        
+
         sed -i "s/DISK_IMAGE_NAME/${IMAGE}.qcow2/" /workspace/cml/image-definition.yaml
         gcloud storage cp /workspace/cml/image-definition.yaml ${GS_CML_IMAGE_DEFINITION_PATH}
       fi

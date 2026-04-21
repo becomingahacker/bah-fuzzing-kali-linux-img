@@ -59,6 +59,7 @@ apt install -y --no-install-recommends \
     nano \
     patchelf \
     pkg-config \
+    python3.12-venv \
     software-properties-common \
     wget \
     zip \

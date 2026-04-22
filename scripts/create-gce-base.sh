@@ -16,12 +16,42 @@ export APT_OPTS="-o Dpkg::Options::=--force-confmiss -o Dpkg::Options::=--force-
 phase() { echo "$1" > "$PHASE_FILE"; }
 get_phase() { cat "$PHASE_FILE" 2>/dev/null || echo "0"; }
 
+# Wait (up to ~5 minutes) for any in-progress apt/dpkg activity to release
+# the frontend lock.  On first boot, unattended-upgrades and cloud-init's
+# package install can both be holding it; without this, concurrent apt-get
+# calls here fail with "Could not get lock".
+wait_apt_lock() {
+  for _ in $(seq 1 60); do
+    if ! fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 \
+       && ! fuser /var/lib/dpkg/lock          >/dev/null 2>&1 \
+       && ! fuser /var/lib/apt/lists/lock     >/dev/null 2>&1; then
+      return 0
+    fi
+    echo "Waiting for apt/dpkg lock..."
+    sleep 5
+  done
+  echo "Gave up waiting for apt/dpkg lock after 5 minutes" >&2
+  return 1
+}
+
 case "$(get_phase)" in
   0)
-    echo "=== Phase 1: Disable cloud-init network, fix growroot, grub, install kernel ==="
+    echo "=== Phase 1: Disable cloud-init network, install generic kernel, fix growroot, grub ==="
     mkdir -p /etc/cloud/cloud.cfg.d
     printf '%s\n' 'network: {config: disabled}' > /etc/cloud/cloud.cfg.d/99_disable_networking_config.cfg
     rm -f /etc/network/interfaces.d/50-cloud-init
+
+    wait_apt_lock
+    apt-get update
+    # initramfs-tools is not pre-installed on ubuntu-minimal; we need it
+    # before we can drop in the growroot hook and run update-initramfs.
+    # linux-image-generic pulls it in, but we list both explicitly for
+    # clarity and to harden against future base-image changes.  Note the
+    # Ubuntu package name is linux-image-generic (Debian uses
+    # linux-image-amd64), and we want the generic kernel so the resulting
+    # image boots on both GCE (for subsequent Packer builds) and libvirt
+    # (CML).
+    apt-get install -y initramfs-tools linux-image-generic
 
     # Fix initramfs growroot (grep/sed/rm/awk in /bin for growpart)
     cat > /usr/share/initramfs-tools/hooks/growroot << 'GROWROOT_EOF'
@@ -57,17 +87,21 @@ GROWROOT_EOF
     echo 'GRUB_TERMINAL_INPUT="serial console"' >> /etc/default/grub
     update-grub
 
-    apt-get update
-    apt-get install -y linux-image-amd64
-
     phase 1
     echo "Phase 1 done. Rebooting..."
     cloud-init clean -c all -r
     ;;
   1)
-    echo "=== Phase 2: Remove cloud kernel ==="
-    apt-get remove --purge -y linux-image-cloud-amd64 || true
-    apt-get remove --purge -y linux-image-*-cloud-amd64 || true
+    echo "=== Phase 2: Remove GCE-specific kernel ==="
+    wait_apt_lock
+    # On Ubuntu GCE images the pre-installed kernel meta-package is
+    # linux-image-gcp (not linux-image-cloud-amd64, which is Debian).
+    # Phase 1 has already installed and rebooted into linux-image-generic,
+    # so it is safe to purge the gcp-specific kernel and its versioned
+    # variants here.
+    apt-get remove --purge -y linux-image-gcp || true
+    apt-get remove --purge -y 'linux-image-*-gcp' || true
+    apt-get autoremove --purge -y || true
     phase 2
     echo "Phase 2 done. Rebooting..."
     cloud-init clean -c all -r

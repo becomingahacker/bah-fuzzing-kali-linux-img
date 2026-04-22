@@ -113,6 +113,27 @@ fi
 # Lock until deploy-time cloud-init sets password (e.g. CML node-definition)
 passwd -l cisco 2>/dev/null || true
 
+# This image is built on GCE (from the ubuntu-minimal-2404-lts-amd64 family)
+# but deployed on CML/KVM, where there is no GCE metadata server at
+# 169.254.169.254. Without this, google-guest-agent, google-osconfig-agent,
+# and google-{startup,shutdown}-scripts all fail at boot and spam the console.
+# Do this near the end of provisioning so Packer's own SSH session (which uses
+# a cloud-init-injected key, not the guest agent) isn't disturbed.
+apt-get purge -y \
+    google-guest-agent \
+    google-osconfig-agent \
+    google-compute-engine \
+    google-guest-configs \
+    gce-compute-image-packages 2>/dev/null || true
+apt-get autoremove --purge -y
+# Defense in depth: if any stragglers remain (e.g. reintroduced by a future
+# apt upgrade), mask their units so systemd won't attempt to start them.
+systemctl mask \
+    google-guest-agent.service \
+    google-osconfig-agent.service \
+    google-startup-scripts.service \
+    google-shutdown-scripts.service 2>/dev/null || true
+
 # Clean up after ourselves
 cat > /etc/cloud/clean.d/10-cml-clean <<EOF
 #!/bin/sh -x

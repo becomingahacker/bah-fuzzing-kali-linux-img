@@ -170,7 +170,6 @@ build {
 
       if [ "${var.provision_script}" = "setup.sh" ]; then
         echo "pristine build: zero-filling free space for a clean baseline"
-        dd if=/dev/zero of=/var/tmp/ZERO bs=1M status=none || true
         rm -f /var/tmp/ZERO
       fi
 

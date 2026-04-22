@@ -3,9 +3,13 @@ substitutions:
   # script (scripts/setup.sh or scripts/tweaks.sh). Default is 'tweaks' so
   # normal pushes are a fast second-stage build layered on top of the existing
   # workshop image; use 'pristine' to rebuild from the public Ubuntu family.
-  _BUILD_TYPE: 'tweaks'
-  # Public Ubuntu family used as immutable base for pristine builds.
-  _BASE_IMAGE_FAMILY: 'ubuntu-minimal-2404-lts-amd64'
+  _BUILD_TYPE: 'pristine'
+  # Libvirt-ready base family used as the source for pristine builds.
+  # Produced by `cloudbuild-base.yaml` (which itself derives from the public
+  # ubuntu-minimal-2404-lts-amd64 family and applies the GCE->libvirt
+  # preparation from scripts/create-gce-base.sh).  Only re-run the base
+  # pipeline when the underlying Ubuntu LTS needs refreshing.
+  _BASE_IMAGE_FAMILY: 'ubuntu-fuzzing-base-cml-amd64'
   # Family where Packer publishes the workshop image.
   _OUTPUT_IMAGE_FAMILY: 'ubuntu-fuzzing-cml-amd64'
   # Name prefix used when creating images.

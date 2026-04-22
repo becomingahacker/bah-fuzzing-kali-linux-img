@@ -22,6 +22,26 @@ cat > /etc/cloud/cloud.cfg.d/99_workshop-datasources.cfg <<'EOF'
 datasource_list: [ NoCloud, ConfigDrive, GCE, None ]
 EOF
 
+# Remove the GCE guest agents if an earlier pristine build left them behind.
+# This image is built on GCE but deployed on CML/KVM, where there is no
+# metadata server, so these services fail at boot and spam the console.
+# Safe to re-run: apt-get purge is idempotent and systemctl mask is a no-op
+# once the unit files are gone.
+# TODO: once confirmed working, this can be dropped from tweaks.sh since
+# scripts/setup.sh does the same cleanup on pristine builds.
+apt-get purge -y \
+    google-guest-agent \
+    google-osconfig-agent \
+    google-compute-engine \
+    google-guest-configs \
+    gce-compute-image-packages 2>/dev/null || true
+apt-get autoremove --purge -y
+systemctl mask \
+    google-guest-agent.service \
+    google-osconfig-agent.service \
+    google-startup-scripts.service \
+    google-shutdown-scripts.service 2>/dev/null || true
+
 # --- Lesson materials go here ---
 # (intentionally empty for now; add curl/git/unzip steps as needed)
 

@@ -1,4 +1,9 @@
 substitutions:
+  # 'pristine' or 'tweaks' - determines the source image family and provision
+  # script (scripts/setup.sh or scripts/tweaks.sh). Default is 'tweaks' so
+  # normal pushes are a fast second-stage build layered on top of the existing
+  # workshop image; use 'pristine' to rebuild from the public Ubuntu family.
+  _BUILD_TYPE: 'tweaks'
   # Public Ubuntu family used as immutable base for pristine builds.
   _BASE_IMAGE_FAMILY: 'ubuntu-minimal-2404-lts-amd64'
   # Family where Packer publishes the workshop image.
@@ -23,8 +28,16 @@ steps:
       echo "Locale settings:"
       cat /etc/default/locale
 
-      PROVISION_SCRIPT="setup.sh"
-      SOURCE_IMAGE_FAMILY="${BASE_IMAGE_FAMILY}"
+      if [ "$BUILD_TYPE" = "pristine" ]; then
+        SOURCE_IMAGE_FAMILY="${BASE_IMAGE_FAMILY}"
+        PROVISION_SCRIPT="setup.sh"
+      elif [ "$BUILD_TYPE" = "tweaks" ]; then
+        SOURCE_IMAGE_FAMILY="${OUTPUT_IMAGE_FAMILY}"
+        PROVISION_SCRIPT="tweaks.sh"
+      else
+        echo "Invalid build type: $BUILD_TYPE"
+        exit 1
+      fi
 
       # SSH key pair for Packer.  Will be removed after build.
       mkdir -vp secrets

@@ -146,6 +146,31 @@ build {
     }
   }
 
+  # Reclaim space and zero free blocks so the exported qcow2 is sparse.
+  # This dramatically reduces `gcloud compute images export` time and the
+  # size of the resulting qcow2 artifact.
+  provisioner "shell" {
+    inline = [ <<-EOF
+      set -e
+
+      apt-get clean || true
+      rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*.deb || true
+
+      journalctl --rotate || true
+      journalctl --vacuum-time=1s || true
+
+      rm -rf /tmp/* /var/tmp/* /root/.cache || true
+      find /home -maxdepth 2 -type d -name .cache -exec rm -rf {} + || true
+
+      fstrim -av || true
+
+      dd if=/dev/zero of=/var/tmp/ZERO bs=1M status=none || true
+      rm -f /var/tmp/ZERO
+      sync
+    EOF
+    ]
+  }
+
   # Clean up all cloud-init data and shutdown cleanly.
   provisioner "shell" {
     inline = [

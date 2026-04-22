@@ -146,9 +146,13 @@ build {
     }
   }
 
-  # Reclaim space and zero free blocks so the exported qcow2 is sparse.
-  # This dramatically reduces `gcloud compute images export` time and the
-  # size of the resulting qcow2 artifact.
+  # Reclaim space so the exported qcow2 is sparse.  This shrinks the qcow2
+  # artifact and the time `gcloud compute images export` spends reading,
+  # converting, and uploading it.  On pd-ssd + ext4, `fstrim` unmaps free
+  # blocks and `qemu-img convert` treats them as holes, so we don't need a
+  # separate zero-fill pass on incremental (tweaks) builds.  We do run a
+  # zero-fill on pristine builds, where the underlying base image may have
+  # non-zero garbage in previously-used blocks.
   provisioner "shell" {
     inline = [ <<-EOF
       set -e
@@ -164,8 +168,12 @@ build {
 
       fstrim -av || true
 
-      dd if=/dev/zero of=/var/tmp/ZERO bs=1M status=none || true
-      rm -f /var/tmp/ZERO
+      if [ "${var.provision_script}" = "setup.sh" ]; then
+        echo "pristine build: zero-filling free space for a clean baseline"
+        dd if=/dev/zero of=/var/tmp/ZERO bs=1M status=none || true
+        rm -f /var/tmp/ZERO
+      fi
+
       sync
     EOF
     ]

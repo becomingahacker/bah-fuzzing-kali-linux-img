@@ -1,0 +1,113 @@
+# Builds the libvirt-ready GCE base image family (`ubuntu-fuzzing-base-cml-amd64`
+# by default) used as the `pristine` source for the workshop image pipeline
+# in `cloudbuild.yaml`.
+#
+# This runs infrequently; normally only when the underlying Ubuntu LTS base
+# needs refreshing or when the family needs to be re-seeded in a new project.
+# The per-workshop `pristine`/`tweaks` pipeline in cloudbuild.yaml then
+# sources from this family, so downstream builds always get a libvirt-bootable
+# image (generic kernel, NoCloud/ConfigDrive-friendly cloud-init, growroot
+# initramfs hook) without having to re-do that preparation every time.
+#
+# Usage:
+#   gcloud builds submit --config=cloudbuild-base.yaml
+
+substitutions:
+  # Family to publish into.  `cloudbuild.yaml` points `_BASE_IMAGE_FAMILY`
+  # here so pristine builds layer setup.sh on top of a libvirt-ready base.
+  _BASE_IMAGE_FAMILY: 'ubuntu-fuzzing-base-cml-amd64'
+  # Upstream public Ubuntu family we derive the base from.
+  _SOURCE_IMAGE_FAMILY: 'ubuntu-minimal-2404-lts-amd64'
+  _SOURCE_IMAGE_PROJECT: 'ubuntu-os-cloud'
+  # Storage region for the published image.
+  _STORAGE_LOCATION: 'us-east1'
+  # Zone used for the short-lived provisioning VM.  Hardcoded rather than
+  # derived from $LOCATION so this config works when submitted directly
+  # (e.g. `gcloud builds submit --config=cloudbuild-base.yaml`) which runs
+  # in the `global` Cloud Build region by default.
+  _ZONE: 'us-east1-b'
+  # Machine type used only during the brief provisioning/reboot loop.
+  _MACHINE_TYPE: 'n2-standard-2'
+  # Safety net for the provisioning wait loop.
+  _PROVISION_TIMEOUT_SECONDS: '3600'
+
+steps:
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    script: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      set -x
+
+      TS="$(date -u +%Y%m%d%H%M%S)"
+      VM_NAME="gce-base-builder-${TS}"
+      IMAGE_NAME="${BASE_IMAGE_FAMILY}-${TS}"
+
+      cleanup() {
+        gcloud compute instances delete "$VM_NAME" \
+          --project "$PROJECT_ID" \
+          --zone "$ZONE" \
+          --delete-disks=all \
+          --quiet 2>/dev/null || true
+      }
+      trap cleanup EXIT
+
+      echo "Creating build VM $VM_NAME from ${SOURCE_IMAGE_PROJECT}/${SOURCE_IMAGE_FAMILY}..."
+      gcloud compute instances create "$VM_NAME" \
+        --project "$PROJECT_ID" \
+        --zone "$ZONE" \
+        --machine-type "$MACHINE_TYPE" \
+        --image-family "$SOURCE_IMAGE_FAMILY" \
+        --image-project "$SOURCE_IMAGE_PROJECT" \
+        --service-account "$SERVICE_ACCOUNT_EMAIL" \
+        --scopes cloud-platform \
+        --metadata-from-file "startup-script=/workspace/scripts/create-gce-base.sh"
+
+      # create-gce-base.sh advances through phases across two reboots and
+      # finally runs `shutdown -P now`.  Poll instance status until it
+      # reports TERMINATED or we hit the safety-net timeout.
+      echo "Waiting for phased provisioning (expect ~10-15 min, 2 reboots)..."
+      DEADLINE=$(( $(date +%s) + PROVISION_TIMEOUT_SECONDS ))
+      while true; do
+        if [ "$(date +%s)" -gt "$DEADLINE" ]; then
+          echo "Timed out waiting for VM to finish provisioning" >&2
+          exit 1
+        fi
+        STATUS="$(gcloud compute instances describe "$VM_NAME" \
+          --project "$PROJECT_ID" --zone "$ZONE" \
+          --format='value(status)' 2>/dev/null || echo '')"
+        if [ "$STATUS" = "TERMINATED" ]; then
+          echo "VM reached TERMINATED; proceeding to image creation"
+          break
+        fi
+        echo "VM status: ${STATUS:-unknown}. Sleeping 30s..."
+        sleep 30
+      done
+
+      echo "Creating image $IMAGE_NAME in family $BASE_IMAGE_FAMILY..."
+      gcloud compute images create "$IMAGE_NAME" \
+        --project "$PROJECT_ID" \
+        --family "$BASE_IMAGE_FAMILY" \
+        --source-disk "$VM_NAME" \
+        --source-disk-zone "$ZONE" \
+        --storage-location "$STORAGE_LOCATION"
+
+      echo "Published image $IMAGE_NAME in family $BASE_IMAGE_FAMILY"
+
+    env:
+      - 'PROJECT_ID=$PROJECT_ID'
+      - 'ZONE=$_ZONE'
+      - 'SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_EMAIL'
+      - 'BASE_IMAGE_FAMILY=$_BASE_IMAGE_FAMILY'
+      - 'SOURCE_IMAGE_FAMILY=$_SOURCE_IMAGE_FAMILY'
+      - 'SOURCE_IMAGE_PROJECT=$_SOURCE_IMAGE_PROJECT'
+      - 'STORAGE_LOCATION=$_STORAGE_LOCATION'
+      - 'MACHINE_TYPE=$_MACHINE_TYPE'
+      - 'PROVISION_TIMEOUT_SECONDS=$_PROVISION_TIMEOUT_SECONDS'
+
+logsBucket: 'gs://bah-build-logs/bah-kali-linux-img'
+serviceAccount: 'projects/gcp-asigbahgcp-nprd-47930/serviceAccounts/build-bah-kali-linux-img@gcp-asigbahgcp-nprd-47930.iam.gserviceaccount.com'
+
+options:
+  logging: GCS_ONLY
+  logStreamingOption: STREAM_ON
+  automapSubstitutions: true

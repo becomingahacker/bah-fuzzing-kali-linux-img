@@ -40,7 +40,9 @@ systemctl mask \
     google-guest-agent.service \
     google-osconfig-agent.service \
     google-startup-scripts.service \
-    google-shutdown-scripts.service 2>/dev/null || true
+    google-shutdown-scripts.service \
+    gce-workload-cert-refresh.service \
+    gce-workload-cert-refresh.timer 2>/dev/null || true
 
 # --- Lesson materials go here ---
 # (intentionally empty for now; add curl/git/unzip steps as needed)

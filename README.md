@@ -13,8 +13,10 @@ re-run at its own cadence:
   re-run – only when the underlying Ubuntu LTS needs refreshing or the base
   family needs to be re-seeded (e.g. in a new project).
 * **Pristine** (`cloudbuild.yaml` with `_BUILD_TYPE=pristine`) – sources the
-  `ubuntu-fuzzing-base-cml-amd64` family and runs `scripts/setup.sh` to
-  install the full toolchain (AFL++, casr, libdaq, LLVM, etc.). Takes about
+  `ubuntu-fuzzing-base-cml-amd64` family, runs `scripts/setup.sh` to install
+  the full toolchain (AFL++, casr, libdaq, LLVM, etc.), and then chains
+  `scripts/tweaks.sh` at the end so the published image is immediately
+  deployable on CML (no follow-up tweaks build required). Takes about
   25-30 minutes; only needs to be re-run when the base toolchain changes.
 * **Tweaks** (`cloudbuild.yaml`, default) – sources the already-built
   `ubuntu-fuzzing-cml-amd64` family produced by the pristine build and runs

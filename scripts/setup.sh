@@ -132,7 +132,9 @@ systemctl mask \
     google-guest-agent.service \
     google-osconfig-agent.service \
     google-startup-scripts.service \
-    google-shutdown-scripts.service 2>/dev/null || true
+    google-shutdown-scripts.service \
+    gce-workload-cert-refresh.service \
+    gce-workload-cert-refresh.timer 2>/dev/null || true
 
 # Clean up after ourselves
 cat > /etc/cloud/clean.d/10-cml-clean <<EOF

@@ -138,6 +138,17 @@ build {
       echo "Starting main provisioning script..."
       chmod u+x /provision/${var.provision_script}
       /provision/${var.provision_script}
+
+      # On pristine builds, also run tweaks.sh so the published pristine
+      # image already has the second-stage lesson tweaks (and any cloud-init
+      # / CML overrides currently living in tweaks.sh) applied.  This means
+      # an image freshly produced from a pristine build is deployable on CML
+      # without first running a follow-up tweaks build.
+      if [ "${var.provision_script}" = "setup.sh" ]; then
+        echo "Pristine build: chaining tweaks.sh after setup.sh..."
+        chmod u+x /provision/tweaks.sh
+        /provision/tweaks.sh
+      fi
     EOF
     ]
     env = { 

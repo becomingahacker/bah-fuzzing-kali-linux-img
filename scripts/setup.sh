@@ -60,8 +60,8 @@ apt install -y --no-install-recommends \
     nano \
     patchelf \
     pkg-config \
-    python3.12-venv \
-    python3.12-pip \
+    python3-venv \
+    python3-pip \
     ripgrep \
     software-properties-common \
     tmux \

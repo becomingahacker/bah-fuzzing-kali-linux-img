@@ -10,7 +10,7 @@ env
 
 flock -w 120 /var/lib/apt/lists/lock -c 'echo waiting for lock'
 apt-get update
-apt-get upgrade -y
+apt-get install -y --no-install-recommends iputils-ping # for debugging
 
 # Ubuntu's GCE image pins datasource_list to [GCE, None] via
 # /etc/cloud/cloud.cfg.d/90_dpkg.cfg. Under CML (libvirt) we need NoCloud

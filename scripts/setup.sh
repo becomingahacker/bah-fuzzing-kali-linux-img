@@ -61,6 +61,7 @@ apt install -y --no-install-recommends \
     patchelf \
     pkg-config \
     python3.12-venv \
+    python3.12-pip \
     ripgrep \
     software-properties-common \
     tmux \
@@ -96,7 +97,7 @@ git clone https://github.com/snort3/libdaq.git /tmp/libdaq \
 
 # Install misc packages for binary fuzzing lessons
 apt install -y libc6-dev-i386 # For building QEMU mode for AFL++ for the 32-bit target program
-pip3 install --break-system-packages lief
+python3.12 -m pip install --break-system-packages lief
 # Build and install AFLplusplus
 git clone https://github.com/AFLplusplus/AFLplusplus /AFLplusplus
 cd /AFLplusplus

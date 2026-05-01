@@ -1,0 +1,25 @@
+# When `gcloud builds submit` is used, this file (rather than .gitignore)
+# determines what gets uploaded as the build context. Workshop payloads
+# are staged in GCS (see _GS_PAYLOADS_PATH in cloudbuild.yaml) and
+# fetched at build time, so we don't want to ship local copies.
+
+.git
+.gitignore
+.cursor
+.envrc
+.terraform
+.terraform.tfstate*
+terraform.tfstate*
+*.swp
+.DS_Store
+tfplan*
+
+# Payloads fetched from GCS at build time.
+rootfs.tar.gz
+lessons.tgz
+
+# Stale tarball superseded by lessons.tgz.
+binary_fuzzer_lessons.tgz
+
+secrets/
+manifest.json

@@ -45,6 +45,24 @@ systemctl mask \
     gce-workload-cert-refresh.timer 2>/dev/null || true
 
 # --- Lesson materials go here ---
-# (intentionally empty for now; add curl/git/unzip steps as needed)
+
+# Drop the workshop lesson materials directly into /home/cisco. The tarball
+# (uploaded to /provision/lessons.tgz by the packer file provisioner) has
+# no top-level wrapper directory, so day1/, day2/, ... land at
+# /home/cisco/day1, /home/cisco/day2, etc. Lives in tweaks.sh (not
+# setup.sh) so lesson updates ship via fast incremental builds without a
+# pristine rebuild. Idempotent: re-running overwrites files in place.
+LESSONS_TARBALL=/provision/lessons.tgz
+if [ -f "$LESSONS_TARBALL" ]; then
+    if ! getent passwd cisco >/dev/null 2>&1; then
+        echo "ERROR: cisco user missing; setup.sh must run before tweaks.sh" >&2
+        exit 1
+    fi
+    tar -xzf "$LESSONS_TARBALL" -C /home/cisco
+    chown -R cisco:cisco /home/cisco
+    rm -f "$LESSONS_TARBALL"
+else
+    echo "WARNING: $LESSONS_TARBALL not found; skipping lessons extraction" >&2
+fi
 
 echo "tweaks.sh completed at $(date -u +%FT%TZ)" > /etc/ubuntu-fuzzing-tweaks.stamp

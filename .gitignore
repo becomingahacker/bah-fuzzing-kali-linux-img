@@ -5,3 +5,7 @@ terraform.tfstate*
 *.swp
 .DS_Store
 tfplan*
+
+# Workshop payloads uploaded into the image by packer (too big / not needed in git).
+rootfs.tar.gz
+lessons.tgz

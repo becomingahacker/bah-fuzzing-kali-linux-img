@@ -115,6 +115,24 @@ build {
     destination = "/provision/"
   }
 
+  # Workshop rootfs payload. Extracted by setup.sh into /opt/rootfs and
+  # exposed via the ROOT env var. ~864 MB compressed; only needed for
+  # pristine builds (setup.sh), but uploading it unconditionally keeps
+  # the packer config simple and tweaks builds skip it via the file
+  # check in setup.sh.
+  provisioner "file" {
+    source      = "/workspace/rootfs.tar.gz"
+    destination = "/provision/rootfs.tar.gz"
+  }
+
+  # Workshop lesson materials. Extracted by setup.sh directly into
+  # /home/cisco (the tarball has no top-level wrapper directory, so its
+  # day1/, day2/, ... entries land in cisco's home).
+  provisioner "file" {
+    source      = "/workspace/lessons.tgz"
+    destination = "/provision/lessons.tgz"
+  }
+
   # Let cloud-init finish before running the
   # main provisioning script.  If cloud-init fails,
   # output the log and stop the build.

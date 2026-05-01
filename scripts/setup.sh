@@ -30,6 +30,7 @@ apt install -y --no-install-recommends \
     clang \
     llvm \
     llvm-dev \
+    gcc-multilib \
     git \
     curl \
     ca-certificates \
@@ -60,11 +61,19 @@ apt install -y --no-install-recommends \
     patchelf \
     pkg-config \
     python3.12-venv \
+    ripgrep \
     software-properties-common \
+    tmux \
+    vim \
     wget \
     zip \
     zlib1g \
     zlib1g-dev
+
+# Install radare2 from source to get a recent version
+git clone https://github.com/radareorg/radare2 /tmp/radare2
+/tmp/radare2/sys/install.sh
+rm -rf /tmp/radare2
 
 # Install Rust for casr
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -85,6 +94,9 @@ git clone https://github.com/snort3/libdaq.git /tmp/libdaq \
     && cd / \
     && rm -rf /tmp/libdaq
 
+# Install misc packages for binary fuzzing lessons
+apt install -y libc6-dev-i386 # For building QEMU mode for AFL++ for the 32-bit target program
+pip3 install --break-system-packages lief
 # Build and install AFLplusplus
 git clone https://github.com/AFLplusplus/AFLplusplus /AFLplusplus
 cd /AFLplusplus
@@ -96,13 +108,45 @@ apt install -y meson ninja-build # for QEMU mode
 apt install -y wget curl # for Frida mode
 apt install -y python3-pip # for Unicorn mode
 git submodule update --init
-make distrib NO_CORESIGHT=1 NO_NYX=1 PERFORMANCE=1
-make install NO_CORESIGHT=1 NO_NYX=1 PERFORMANCE=1
+# The CPU_TARGET should only affect QEMU mode, and this is easier than building it separately
+make distrib NO_CORESIGHT=1 NO_NYX=1 PERFORMANCE=1 CPU_TARGET=i386
+make install NO_CORESIGHT=1 NO_NYX=1 PERFORMANCE=1 CPU_TARGET=i386
 afl-system-config
 cd /
 
+# Unpack the workshop rootfs payload (uploaded to /provision/rootfs.tar.gz
+# by the packer file provisioner) into /opt/rootfs and expose it via the
+# ROOT environment variable for all users / sessions. We export ROOT in
+# two places so it works for both interactive login shells (profile.d) and
+# non-shell PAM sessions like lightdm/SSH ForceCommand (/etc/environment).
+# Lives in setup.sh (not tweaks.sh) because the rootfs is large and stable;
+# updates only ship via a pristine rebuild.
+ROOTFS_TARBALL=/provision/rootfs.tar.gz
+ROOTFS_DIR=/opt/rootfs
+if [ -f "$ROOTFS_TARBALL" ]; then
+    mkdir -p /opt
+    # Tarball has a top-level rootfs/ dir, so this yields /opt/rootfs.
+    tar -xzf "$ROOTFS_TARBALL" -C /opt
+    # Reclaim ~864 MB from the final image.
+    rm -f "$ROOTFS_TARBALL"
+else
+    echo "WARNING: $ROOTFS_TARBALL not found; skipping rootfs extraction" >&2
+fi
+
+cat > /etc/profile.d/rootfs.sh <<EOF
+export ROOT=$ROOTFS_DIR
+EOF
+chmod 0644 /etc/profile.d/rootfs.sh
+
+# /etc/environment is parsed by pam_env, so non-bash sessions also see it.
+# Strip any prior ROOT= line, then append.
+sed -i '/^ROOT=/d' /etc/environment
+echo "ROOT=$ROOTFS_DIR" >> /etc/environment
+
 # Ensure cisco user exists with a proper home directory so X/lightdm and
 # gnome-keyring can write .Xauthority and ~/.local/share/keyrings.
+# Lesson materials (lessons.tgz) are unpacked by tweaks.sh so lesson
+# updates ship via fast incremental builds without a pristine rebuild.
 if ! getent passwd cisco >/dev/null 2>&1; then
   useradd -m -s /bin/bash -G users,adm,sudo cisco
 fi

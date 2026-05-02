@@ -125,14 +125,6 @@ build {
     destination = "/provision/rootfs.tar.gz"
   }
 
-  # Workshop lesson materials. Extracted by setup.sh directly into
-  # /home/cisco (the tarball has no top-level wrapper directory, so its
-  # day1/, day2/, ... entries land in cisco's home).
-  provisioner "file" {
-    source      = "/workspace/lessons.tgz"
-    destination = "/provision/lessons.tgz"
-  }
-
   # Let cloud-init finish before running the
   # main provisioning script.  If cloud-init fails,
   # output the log and stop the build.

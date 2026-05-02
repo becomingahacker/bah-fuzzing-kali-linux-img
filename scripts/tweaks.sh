@@ -46,23 +46,50 @@ systemctl mask \
 
 # --- Lesson materials go here ---
 
-# Drop the workshop lesson materials directly into /home/cisco. The tarball
-# (uploaded to /provision/lessons.tgz by the packer file provisioner) has
-# no top-level wrapper directory, so day1/, day2/, ... land at
-# /home/cisco/day1, /home/cisco/day2, etc. Lives in tweaks.sh (not
-# setup.sh) so lesson updates ship via fast incremental builds without a
-# pristine rebuild. Idempotent: re-running overwrites files in place.
-LESSONS_TARBALL=/provision/lessons.tgz
-if [ -f "$LESSONS_TARBALL" ]; then
-    if ! getent passwd cisco >/dev/null 2>&1; then
-        echo "ERROR: cisco user missing; setup.sh must run before tweaks.sh" >&2
-        exit 1
-    fi
-    tar -xzf "$LESSONS_TARBALL" -C /home/cisco
-    chown -R cisco:cisco /home/cisco
-    rm -f "$LESSONS_TARBALL"
-else
-    echo "WARNING: $LESSONS_TARBALL not found; skipping lessons extraction" >&2
+# Drop the workshop guides into /home/cisco/guides by shallow-cloning only the
+# `docs` branch of bah-fuzzing-lab and copying the relevant subtree. Lives in
+# tweaks.sh (not setup.sh) so lesson updates ship via fast incremental builds
+# without a pristine rebuild. Idempotent: re-running refreshes files in place.
+if ! getent passwd cisco >/dev/null 2>&1; then
+    echo "ERROR: cisco user missing; setup.sh must run before tweaks.sh" >&2
+    exit 1
 fi
+
+LESSONS_REPO_URL=https://github.com/becomingahacker/bah-fuzzing-lab.git
+LESSONS_TMP=/tmp/bah-fuzzing-lab
+GUIDES_DIR=/home/cisco/guides
+
+rm -rf "$LESSONS_TMP"
+git clone --depth 1 --branch docs --single-branch "$LESSONS_REPO_URL" "$LESSONS_TMP"
+
+install -d -o cisco -g cisco "$GUIDES_DIR"
+cp -a \
+    "$LESSONS_TMP/docs/day-1" \
+    "$LESSONS_TMP/docs/day-2" \
+    "$LESSONS_TMP/docs/parking_game" \
+    "$LESSONS_TMP/docs/index.md" \
+    "$GUIDES_DIR/"
+chown -R cisco:cisco "$GUIDES_DIR"
+rm -rf "$LESSONS_TMP"
+
+TARGET_DIR=/home/cisco/target
+install -d -o cisco -g cisco "$TARGET_DIR"
+rm -rf "$TARGET_DIR/libdaq" "$TARGET_DIR/snort3"
+git clone https://github.com/snort3/libdaq.git "$TARGET_DIR/libdaq"
+git clone https://github.com/snort3/snort3.git "$TARGET_DIR/snort3"
+
+SNORT3_REVERT_SHA=73488807aeee7ae738c7d125822366e6c13fcf78
+git -C "$TARGET_DIR/snort3" checkout "${SNORT3_REVERT_SHA}^" -- \
+    src/network_inspectors/appid/service_plugins/service_bootp.cc \
+    src/network_inspectors/appid/service_plugins/test/CMakeLists.txt \
+    src/network_inspectors/appid/service_plugins/test/service_plugin_mock.h
+git -C "$TARGET_DIR/snort3" rm -f \
+    src/network_inspectors/appid/service_plugins/test/service_bootp_test.cc
+git -C "$TARGET_DIR/snort3" \
+    -c user.name="BAH Fuzzing Workshop" \
+    -c user.email="workshop@becomingahacker.invalid" \
+    commit -m "workshop: revert bootp OOB fix (${SNORT3_REVERT_SHA:0:12}) for fuzzing exercise"
+
+chown -R cisco:cisco "$TARGET_DIR"
 
 echo "tweaks.sh completed at $(date -u +%FT%TZ)" > /etc/ubuntu-fuzzing-tweaks.stamp

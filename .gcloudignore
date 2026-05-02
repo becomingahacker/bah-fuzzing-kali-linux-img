@@ -16,9 +16,9 @@ tfplan*
 
 # Payloads fetched from GCS at build time.
 rootfs.tar.gz
-lessons.tgz
 
-# Stale tarball superseded by lessons.tgz.
+# Stale lesson tarballs (now provisioned via git clone in tweaks.sh).
+lessons.tgz
 binary_fuzzer_lessons.tgz
 
 secrets/

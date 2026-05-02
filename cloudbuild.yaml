@@ -3,7 +3,7 @@ substitutions:
   # script (scripts/setup.sh or scripts/tweaks.sh). Default is 'tweaks' so
   # normal pushes are a fast second-stage build layered on top of the existing
   # workshop image; use 'pristine' to rebuild from the public Ubuntu family.
-  _BUILD_TYPE: 'tweaks'
+  _BUILD_TYPE: 'pristine'
   # Libvirt-ready base family used as the source for pristine builds.
   # Produced by `cloudbuild-base.yaml` (which itself derives from the public
   # ubuntu-minimal-2404-lts-amd64 family and applies the GCE->libvirt
@@ -18,10 +18,9 @@ substitutions:
   _GS_IMAGE_PATH: 'gs://bah-machine-images/ubuntu-fuzzing'
   _GS_CML_IMAGE_PATH: 'gs://bah-libvirt-images-ue1/virl-base-images/ubuntu-fuzzing'
   _GS_CML_IMAGE_DEFINITION_PATH: 'gs://bah-libvirt-images-ue1/virl-base-images/ubuntu-fuzzing/ubuntu-fuzzing.yaml'
-  # Bucket prefix for workshop payloads (rootfs.tar.gz, lessons.tgz) that
-  # are too large for git. Refresh from a workstation with:
+  # Bucket prefix for workshop payloads (rootfs.tar.gz) that are too large
+  # for git. Refresh from a workstation with:
   #   gcloud storage cp ./rootfs.tar.gz gs://bah-machine-images/payloads/
-  #   gcloud storage cp ./lessons.tgz   gs://bah-machine-images/payloads/
   _GS_PAYLOADS_PATH: 'gs://bah-machine-images/payloads'
 
 steps:
@@ -55,12 +54,11 @@ steps:
       $(gcloud info --format="value(basic.python_location)") -m pip install numpy
 
       # Stage workshop payloads from GCS into /workspace so the packer
-      # file provisioners can pick them up. These tarballs are not in git
-      # (rootfs.tar.gz is ~864 MB, well over GitHub's file-size limit), so
-      # they're maintained out-of-band in ${GS_PAYLOADS_PATH} and refreshed
-      # with `gcloud storage cp` from a workstation.
+      # file provisioners can pick them up. rootfs.tar.gz is ~864 MB, well
+      # over GitHub's file-size limit, so it's maintained out-of-band in
+      # ${GS_PAYLOADS_PATH} and refreshed with `gcloud storage cp` from a
+      # workstation.
       gcloud storage cp ${GS_PAYLOADS_PATH}/rootfs.tar.gz /workspace/rootfs.tar.gz
-      gcloud storage cp ${GS_PAYLOADS_PATH}/lessons.tgz   /workspace/lessons.tgz
 
       # Build Ubuntu workshop image with Packer
       packer init ubuntu-fuzzing-gce.pkr.hcl

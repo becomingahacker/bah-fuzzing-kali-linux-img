@@ -28,14 +28,18 @@ touch /root/.hushlogin
 apt install -y --no-install-recommends \
     build-essential \
     clang \
-    llvm \
-    llvm-dev \
+    clang-20 \
+    clang-tools-20 \
+    lld-20 \
+    llvm-20 \
+    llvm-20-dev \
     gcc-multilib \
     git \
     curl \
     ca-certificates \
     autoconf \
     automake \
+    bash-completion \
     build-essential \
     clangd \
     cmake \
@@ -71,20 +75,16 @@ apt install -y --no-install-recommends \
     zlib1g \
     zlib1g-dev
 
-# Install radare2 from source to get a recent version
-git clone https://github.com/radareorg/radare2 /tmp/radare2
-/tmp/radare2/sys/install.sh
-rm -rf /tmp/radare2
 
-# Install Rust for casr
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-source $HOME/.cargo/env
-git clone https://github.com/ispras/casr.git /tmp/casr
-cd /tmp/casr
-cargo update && cargo build --release && cp -r target/release/* /usr/local/bin/
-cd / && rm -rf /tmp/casr
+# # Install Rust for casr
+# curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# source $HOME/.cargo/env
+# git clone https://github.com/ispras/casr.git /tmp/casr
+# cd /tmp/casr
+# cargo update && cargo build --release && cp -r target/release/* /usr/local/bin/
+# cd / && rm -rf /tmp/casr
 
-bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
+#bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
 
 git clone https://github.com/snort3/libdaq.git /tmp/libdaq \
     && cd /tmp/libdaq \
@@ -102,8 +102,25 @@ python3.12 -m pip install --break-system-packages lief
 git clone https://github.com/AFLplusplus/AFLplusplus /AFLplusplus
 cd /AFLplusplus
 apt install -y build-essential python3-dev automake cmake git flex bison libglib2.0-dev libpixman-1-dev python3-setuptools cargo libgtk-3-dev
-# try to install llvm-18 and install the distro default if that fails
-apt install -y lld-18 llvm-18 llvm-18-dev clang-18 || apt-get install -y lld llvm llvm-dev clang
+# try to install llvm-20 and install the distro default if that fails
+apt install -y lld-20 llvm-20 llvm-20-dev clang-20 || apt-get install -y lld llvm llvm-dev clang
+
+# Make the LLVM 20 toolchain the default for unversioned binaries
+# (clang -> clang-20, llvm-config -> llvm-config-20, lld -> lld-20, etc.)
+# so AFL++ (built below) and interactive shells pick up LLVM 20.
+# Iterate over every /usr/bin/*-20 binary the LLVM/clang packages dropped
+# in and register an update-alternatives entry for the unversioned name.
+if [ -x /usr/bin/clang-20 ]; then
+    for versioned in /usr/bin/*-20; do
+        [ -x "$versioned" ] || continue
+        unversioned=$(basename "$versioned" -20)
+        # Defensive: skip empty basenames (shouldn't happen for *-20).
+        [ -n "$unversioned" ] || continue
+        update-alternatives --install \
+            "/usr/bin/$unversioned" "$unversioned" "$versioned" 200
+    done
+fi
+
 apt install -y gcc-$(gcc --version|head -n1|sed 's/\..*//'|sed 's/.* //')-plugin-dev libstdc++-$(gcc --version|head -n1|sed 's/\..*//'|sed 's/.* //')-dev
 apt install -y meson ninja-build # for QEMU mode
 apt install -y wget curl # for Frida mode
@@ -114,6 +131,12 @@ make distrib NO_CORESIGHT=1 NO_NYX=1 PERFORMANCE=1 CPU_TARGET=i386
 make install NO_CORESIGHT=1 NO_NYX=1 PERFORMANCE=1 CPU_TARGET=i386
 afl-system-config
 cd /
+
+# Install radare2 from source to get a recent version
+git clone https://github.com/radareorg/radare2 /tmp/radare2
+/tmp/radare2/sys/install.sh
+rm -rf /tmp/radare2
+
 
 # Unpack the workshop rootfs payload (uploaded to /provision/rootfs.tar.gz
 # by the packer file provisioner) into /opt/rootfs and expose it via the
@@ -146,8 +169,9 @@ echo "ROOT=$ROOTFS_DIR" >> /etc/environment
 
 # Ensure cisco user exists with a proper home directory so X/lightdm and
 # gnome-keyring can write .Xauthority and ~/.local/share/keyrings.
-# Lesson materials (lessons.tgz) are unpacked by tweaks.sh so lesson
-# updates ship via fast incremental builds without a pristine rebuild.
+# Lesson materials (guides) and fuzzing-target sources (snort3, libdaq) are
+# git-cloned by tweaks.sh so lesson updates ship via fast incremental builds
+# without a pristine rebuild.
 if ! getent passwd cisco >/dev/null 2>&1; then
   useradd -m -s /bin/bash -G users,adm,sudo cisco
 fi

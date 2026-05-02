@@ -8,4 +8,6 @@ tfplan*
 
 # Workshop payloads uploaded into the image by packer (too big / not needed in git).
 rootfs.tar.gz
+
+# Legacy lesson tarball (now provisioned via git clone in tweaks.sh).
 lessons.tgz

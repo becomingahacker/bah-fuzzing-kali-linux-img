@@ -76,7 +76,22 @@ TARGET_DIR=/home/cisco/target
 install -d -o cisco -g cisco "$TARGET_DIR"
 rm -rf "$TARGET_DIR/libdaq" "$TARGET_DIR/snort3"
 git clone https://github.com/snort3/libdaq.git "$TARGET_DIR/libdaq"
-git clone https://github.com/bryhuang_cisco/fuzzing-workshop-day1-snort.git "$TARGET_DIR/snort3"
+
+# Snort3 fuzzing target is shipped out-of-band as a tarball staged into
+# /provision/ by the packer file provisioner (sourced from
+# ${GS_PAYLOADS_PATH}/fuzzing-workshop-day1-snort.tgz in cloudbuild.yaml).
+# Replaces the previous `git clone` of bryhuang_cisco/fuzzing-workshop-day1-snort
+# so lesson updates can ship without depending on that private repo. The
+# tarball has a single top-level fuzzing-workshop-day1-snort/ directory;
+# strip it so contents land directly in /home/cisco/target/snort3.
+SNORT_TARBALL=/provision/fuzzing-workshop-day1-snort.tgz
+if [ ! -f "$SNORT_TARBALL" ]; then
+    echo "ERROR: $SNORT_TARBALL not found; cloudbuild.yaml must stage it from GCS" >&2
+    exit 1
+fi
+install -d -o cisco -g cisco "$TARGET_DIR/snort3"
+tar -xzf "$SNORT_TARBALL" -C "$TARGET_DIR/snort3" --strip-components=1
+rm -f "$SNORT_TARBALL"
 
 chown -R cisco:cisco "$TARGET_DIR"
 

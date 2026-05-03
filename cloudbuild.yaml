@@ -57,8 +57,11 @@ steps:
       # file provisioners can pick them up. rootfs.tar.gz is ~864 MB, well
       # over GitHub's file-size limit, so it's maintained out-of-band in
       # ${GS_PAYLOADS_PATH} and refreshed with `gcloud storage cp` from a
-      # workstation.
+      # workstation. fuzzing-workshop-day1-snort.tgz is ~200 MB and is the
+      # snapshot of the snort3 fuzzing target source tree consumed by
+      # tweaks.sh in place of a `git clone`.
       gcloud storage cp ${GS_PAYLOADS_PATH}/rootfs.tar.gz /workspace/rootfs.tar.gz
+      gcloud storage cp ${GS_PAYLOADS_PATH}/fuzzing-workshop-day1-snort.tgz /workspace/fuzzing-workshop-day1-snort.tgz
 
       # Build Ubuntu workshop image with Packer
       packer init ubuntu-fuzzing-gce.pkr.hcl

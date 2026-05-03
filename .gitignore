@@ -8,6 +8,7 @@ tfplan*
 
 # Workshop payloads uploaded into the image by packer (too big / not needed in git).
 rootfs.tar.gz
+fuzzing-workshop-day1-snort.tgz
 
 # Legacy lesson tarball (now provisioned via git clone in tweaks.sh).
 lessons.tgz

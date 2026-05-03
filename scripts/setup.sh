@@ -183,7 +183,7 @@ fi
 # Install radare2 as cisco user from source to get a recent version
 git clone https://github.com/radareorg/radare2 /tmp/radare2
 chown -R cisco:cisco /tmp/radare2
-sudo -u cisco /tmp/radare2/sys/install.sh
+/tmp/radare2/sys/install.sh
 rm -rf /tmp/radare2
 
 # Lock until deploy-time cloud-init sets password (e.g. CML node-definition)

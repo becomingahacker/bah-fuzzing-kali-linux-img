@@ -52,6 +52,7 @@ apt install -y --no-install-recommends \
     cmake \
     curl \
     flex \
+    libfl-dev \
     git \
     git-lfs \
     gnupg \
@@ -90,15 +91,6 @@ apt install -y --no-install-recommends \
 # cd /tmp/casr
 # cargo update && cargo build --release && cp -r target/release/* /usr/local/bin/
 # cd / && rm -rf /tmp/casr
-
-git clone https://github.com/snort3/libdaq.git /tmp/libdaq \
-    && cd /tmp/libdaq \
-    && ./bootstrap \
-    && ./configure --prefix=/usr \
-    && make -j$(nproc) \
-    && make install \
-    && cd / \
-    && rm -rf /tmp/libdaq
 
 # Install misc packages for binary fuzzing lessons
 apt install -y libc6-dev-i386 # For building QEMU mode for AFL++ for the 32-bit target program

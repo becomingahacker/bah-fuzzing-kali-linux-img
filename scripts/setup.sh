@@ -10,6 +10,11 @@ env
 flock -w 120 /var/lib/apt/lists/lock -c 'echo waiting for lock'
 apt update
 apt upgrade -y
+
+# upgrade to full server install
+echo y | unminimize
+
+#Fix locales
 printf "LANG=en_US.UTF-8\nLC_ALL=en_US.UTF-8\n" > /etc/default/locale
 apt install -y --no-install-recommends locales sudo
 locale-gen --purge "en_US.UTF-8"
@@ -25,14 +30,16 @@ echo -e \"[Service]\nTimeoutStartSec=60sec\" > /etc/systemd/system/networking.se
 # Don't display message when automatically logging in
 touch /root/.hushlogin
 
+
+bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
+    # clang \
+    # clang-20 \
+    # clang-tools-20 \
+    # lld-20 \
+    # llvm-20 \
+    # llvm-20-dev \
 apt install -y --no-install-recommends \
     build-essential \
-    clang \
-    clang-20 \
-    clang-tools-20 \
-    lld-20 \
-    llvm-20 \
-    llvm-20-dev \
     gcc-multilib \
     git \
     curl \
@@ -84,8 +91,6 @@ apt install -y --no-install-recommends \
 # cargo update && cargo build --release && cp -r target/release/* /usr/local/bin/
 # cd / && rm -rf /tmp/casr
 
-#bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
-
 git clone https://github.com/snort3/libdaq.git /tmp/libdaq \
     && cd /tmp/libdaq \
     && ./bootstrap \
@@ -132,11 +137,6 @@ make install NO_CORESIGHT=1 NO_NYX=1 PERFORMANCE=1 CPU_TARGET=i386
 afl-system-config
 cd /
 
-# Install radare2 from source to get a recent version
-git clone https://github.com/radareorg/radare2 /tmp/radare2
-/tmp/radare2/sys/install.sh
-rm -rf /tmp/radare2
-
 
 # Unpack the workshop rootfs payload (uploaded to /provision/rootfs.tar.gz
 # by the packer file provisioner) into /opt/rootfs and expose it via the
@@ -179,6 +179,12 @@ if [ -d /home/cisco ]; then
   chown -R cisco:cisco /home/cisco
   chmod 755 /home/cisco
 fi
+
+# Install radare2 as cisco user from source to get a recent version
+git clone https://github.com/radareorg/radare2 /tmp/radare2
+sudo -u cisco /tmp/radare2/sys/install.sh
+rm -rf /tmp/radare2
+
 # Lock until deploy-time cloud-init sets password (e.g. CML node-definition)
 passwd -l cisco 2>/dev/null || true
 

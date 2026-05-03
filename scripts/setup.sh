@@ -181,10 +181,14 @@ if [ -d /home/cisco ]; then
 fi
 
 # Install radare2 as cisco user from source to get a recent version
-git clone https://github.com/radareorg/radare2 /tmp/radare2
-chown -R cisco:cisco /tmp/radare2
-/tmp/radare2/sys/install.sh
-rm -rf /tmp/radare2
+(
+  cd /home/cisco
+  # radare's installer is super dumb and you have to keep the source dir for it to work
+  git clone https://github.com/radareorg/radare2.git .radare2
+  chown -R cisco:cisco /home/cisco/.radare2
+  cd /home/cisco/.radare2
+  ./sys/install.sh --install
+)
 
 # Lock until deploy-time cloud-init sets password (e.g. CML node-definition)
 passwd -l cisco 2>/dev/null || true

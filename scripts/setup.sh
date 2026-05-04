@@ -182,6 +182,8 @@ fi
   ./sys/install.sh --install
 )
 
+sudo apt install -y gdb-multiarch
+
 # Lock until deploy-time cloud-init sets password (e.g. CML node-definition)
 passwd -l cisco 2>/dev/null || true
 

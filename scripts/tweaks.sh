@@ -99,13 +99,20 @@ FUZZ_COMPILE_DIR=$TARGET_DIR/snort3/fuzz/scripts/compile
 FUZZ_SEED_DIR=$TARGET_DIR/snort3/fuzz/seed
 
 install -d "$APPID_FUZZ_DIR" "$FUZZ_COMPILE_DIR" "$FUZZ_SEED_DIR"
+# Intentionally exclude the *-answer.cc files: students complete the
+# bootp-fuzz-template.cc and service_plugin_mock.cc skeletons themselves
+# during the day-1 lesson. Answer files remain available under
+# /home/cisco/guides/day-1 for instructors / post-lesson review.
 cp -a \
     "$LESSON_DAY1/CMakeLists.txt" \
-    "$LESSON_DAY1/bootp-fuzz-template-answer.cc" \
     "$LESSON_DAY1/bootp-fuzz-template.cc" \
-    "$LESSON_DAY1/new_service_plugin_mock-answer.cc" \
     "$LESSON_DAY1/service_plugin_mock.cc" \
     "$APPID_FUZZ_DIR/"
+# Scrub any pre-existing answer files in case an older
+# tweaks build (or a future cp regression) left them in the fuzz dir.
+rm -f \
+    "$APPID_FUZZ_DIR/bootp-fuzz-template-answer.cc" \
+    "$APPID_FUZZ_DIR/new_service_plugin_mock-answer.cc" || true
 cp -a "$LESSON_DAY1/build-afl-fuzzers.sh" "$FUZZ_COMPILE_DIR/"
 chmod +x "$FUZZ_COMPILE_DIR/build-afl-fuzzers.sh"
 cp -a "$LESSON_DAY1/bootp_seeds" "$FUZZ_SEED_DIR/"

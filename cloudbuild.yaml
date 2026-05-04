@@ -3,7 +3,7 @@ substitutions:
   # script (scripts/setup.sh or scripts/tweaks.sh). Default is 'tweaks' so
   # normal pushes are a fast second-stage build layered on top of the existing
   # workshop image; use 'pristine' to rebuild from the public Ubuntu family.
-  _BUILD_TYPE: 'pristine'
+  _BUILD_TYPE: 'tweaks'
   # Libvirt-ready base family used as the source for pristine builds.
   # Produced by `cloudbuild-base.yaml` (which itself derives from the public
   # ubuntu-minimal-2404-lts-amd64 family and applies the GCE->libvirt
@@ -57,11 +57,10 @@ steps:
       # file provisioners can pick them up. rootfs.tar.gz is ~864 MB, well
       # over GitHub's file-size limit, so it's maintained out-of-band in
       # ${GS_PAYLOADS_PATH} and refreshed with `gcloud storage cp` from a
-      # workstation. fuzzing-workshop-day1-snort.tgz is ~200 MB and is the
-      # snapshot of the snort3 fuzzing target source tree consumed by
-      # tweaks.sh in place of a `git clone`.
+      # workstation. (The snort3 fuzzing target tree is now `git clone`d
+      # by tweaks.sh from upstream snort3 + the bah-fuzzing-lab docs branch,
+      # so no out-of-band tarball staging is needed for it.)
       gcloud storage cp ${GS_PAYLOADS_PATH}/rootfs.tar.gz /workspace/rootfs.tar.gz
-      gcloud storage cp ${GS_PAYLOADS_PATH}/fuzzing-workshop-day1-snort.tgz /workspace/fuzzing-workshop-day1-snort.tgz
 
       # Build Ubuntu workshop image with Packer
       packer init ubuntu-fuzzing-gce.pkr.hcl

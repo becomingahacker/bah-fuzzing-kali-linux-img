@@ -70,28 +70,66 @@ cp -a \
     "$LESSONS_TMP/docs/index.md" \
     "$GUIDES_DIR/"
 chown -R cisco:cisco "$GUIDES_DIR"
-rm -rf "$LESSONS_TMP"
 
 TARGET_DIR=/home/cisco/target
 install -d -o cisco -g cisco "$TARGET_DIR"
 rm -rf "$TARGET_DIR/libdaq" "$TARGET_DIR/snort3"
 git clone https://github.com/snort3/libdaq.git "$TARGET_DIR/libdaq"
 
-# Snort3 fuzzing target is shipped out-of-band as a tarball staged into
-# /provision/ by the packer file provisioner (sourced from
-# ${GS_PAYLOADS_PATH}/fuzzing-workshop-day1-snort.tgz in cloudbuild.yaml).
-# Replaces the previous `git clone` of bryhuang_cisco/fuzzing-workshop-day1-snort
-# so lesson updates can ship without depending on that private repo. The
-# tarball has a single top-level fuzzing-workshop-day1-snort/ directory;
-# strip it so contents land directly in /home/cisco/target/snort3.
-SNORT_TARBALL=/provision/fuzzing-workshop-day1-snort.tgz
-if [ ! -f "$SNORT_TARBALL" ]; then
-    echo "ERROR: $SNORT_TARBALL not found; cloudbuild.yaml must stage it from GCS" >&2
-    exit 1
+# Snort3 fuzzing target: clone upstream snort3, then revert just the
+# bootp service plugin to its pre-fix state so the OOB read introduced in
+# https://github.com/snort3/snort3/commit/73488807aeee7ae738c7d125822366e6c13fcf78
+# is exploitable by the day-1 lesson harness. We need full git history
+# (no --depth=1) so we can `git checkout <commit>^ -- <file>` to grab the
+# parent revision of just service_bootp.cc.
+SNORT_FIX_COMMIT=73488807aeee7ae738c7d125822366e6c13fcf78
+SNORT_BOOTP_PATH=src/network_inspectors/appid/service_plugins/service_bootp.cc
+
+git clone https://github.com/snort3/snort3.git "$TARGET_DIR/snort3"
+git -C "$TARGET_DIR/snort3" checkout "${SNORT_FIX_COMMIT}^" -- "$SNORT_BOOTP_PATH"
+
+# Drop the day-1 fuzzing harness (provided by the lessons repo) into the
+# snort3 source tree at the locations the lesson and CMake expects:
+#   - service_plugins/fuzz/  : libFuzzer harnesses, mocks, CMakeLists.txt
+#   - fuzz/scripts/compile/  : AFL++ build helper
+#   - fuzz/seed/bootp_seeds/ : seed corpus for bootp harness
+LESSON_DAY1=$LESSONS_TMP/docs/day-1
+APPID_FUZZ_DIR=$TARGET_DIR/snort3/src/network_inspectors/appid/service_plugins/fuzz
+FUZZ_COMPILE_DIR=$TARGET_DIR/snort3/fuzz/scripts/compile
+FUZZ_SEED_DIR=$TARGET_DIR/snort3/fuzz/seed
+
+install -d "$APPID_FUZZ_DIR" "$FUZZ_COMPILE_DIR" "$FUZZ_SEED_DIR"
+cp -a \
+    "$LESSON_DAY1/CMakeLists.txt" \
+    "$LESSON_DAY1/bootp-fuzz-template-answer.cc" \
+    "$LESSON_DAY1/bootp-fuzz-template.cc" \
+    "$LESSON_DAY1/new_service_plugin_mock-answer.cc" \
+    "$LESSON_DAY1/service_plugin_mock.cc" \
+    "$APPID_FUZZ_DIR/"
+cp -a "$LESSON_DAY1/build-afl-fuzzers.sh" "$FUZZ_COMPILE_DIR/"
+chmod +x "$FUZZ_COMPILE_DIR/build-afl-fuzzers.sh"
+cp -a "$LESSON_DAY1/bootp_seeds" "$FUZZ_SEED_DIR/"
+
+# Wire the new fuzz subdirectory into the appid build, gated on the same
+# ENABLE_FUZZERS option Snort already uses for its in-tree fuzz targets.
+# Equivalent to:  239a240,242
+#                 > if(ENABLE_FUZZERS)
+#                 >     add_subdirectory (service_plugins/fuzz)
+#                 > endif(ENABLE_FUZZERS)
+# Idempotent: skipped if the subdir is already wired in.
+APPID_CMAKE=$TARGET_DIR/snort3/src/network_inspectors/appid/CMakeLists.txt
+if ! grep -qF 'service_plugins/fuzz' "$APPID_CMAKE"; then
+    awk 'NR==239 {
+        print
+        print "if(ENABLE_FUZZERS)"
+        print "    add_subdirectory (service_plugins/fuzz)"
+        print "endif(ENABLE_FUZZERS)"
+        next
+    } { print }' "$APPID_CMAKE" > "$APPID_CMAKE.new"
+    mv "$APPID_CMAKE.new" "$APPID_CMAKE"
 fi
-install -d -o cisco -g cisco "$TARGET_DIR/snort3"
-tar -xzf "$SNORT_TARBALL" -C "$TARGET_DIR/snort3" --strip-components=1
-rm -f "$SNORT_TARBALL"
+
+rm -rf "$LESSONS_TMP"
 
 chown -R cisco:cisco "$TARGET_DIR"
 

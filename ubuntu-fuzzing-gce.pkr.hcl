@@ -125,16 +125,10 @@ build {
     destination = "/provision/rootfs.tar.gz"
   }
 
-  # Snort3 fuzzing-target source snapshot. Extracted by tweaks.sh into
-  # /home/cisco/target/snort3 (replacing the previous git clone of
-  # bryhuang_cisco/fuzzing-workshop-day1-snort). Maintained out-of-band
-  # in ${GS_PAYLOADS_PATH} like rootfs.tar.gz; refresh from a workstation
-  # with `gcloud storage cp ./fuzzing-workshop-day1-snort.tgz \
-  # gs://bah-machine-images/payloads/`.
-  provisioner "file" {
-    source      = "/workspace/fuzzing-workshop-day1-snort.tgz"
-    destination = "/provision/fuzzing-workshop-day1-snort.tgz"
-  }
+  # Snort3 fuzzing-target source is no longer staged as a tarball: tweaks.sh
+  # now `git clone`s upstream snort3, reverts service_bootp.cc to its
+  # pre-CVE-fix state, and overlays the day-1 lesson harness from the
+  # bah-fuzzing-lab docs branch. See scripts/tweaks.sh for details.
 
   # Let cloud-init finish before running the
   # main provisioning script.  If cloud-init fails,

@@ -140,4 +140,12 @@ rm -rf "$LESSONS_TMP"
 
 chown -R cisco:cisco "$TARGET_DIR"
 
+# Default gdb to Intel disassembly syntax for the cisco user (workshop default).
+install -o cisco -g cisco -m 0644 /dev/stdin /home/cisco/.gdbinit <<'EOF'
+set disassembly-flavor intel
+set confirm off
+set pagination off
+EOF
+echo YES | afl-persistent-config
+
 echo "tweaks.sh completed at $(date -u +%FT%TZ)" > /etc/ubuntu-fuzzing-tweaks.stamp

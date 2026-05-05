@@ -3,7 +3,7 @@ substitutions:
   # script (scripts/setup.sh or scripts/tweaks.sh). Default is 'tweaks' so
   # normal pushes are a fast second-stage build layered on top of the existing
   # workshop image; use 'pristine' to rebuild from the public Ubuntu family.
-  _BUILD_TYPE: 'pristine'
+  _BUILD_TYPE: 'pristine' # or 'tweaks'
   # Libvirt-ready base family used as the source for pristine builds.
   # Produced by `cloudbuild-base.yaml` (which itself derives from the public
   # ubuntu-minimal-2404-lts-amd64 family and applies the GCE->libvirt

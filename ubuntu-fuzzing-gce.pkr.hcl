@@ -125,11 +125,6 @@ build {
     destination = "/provision/rootfs.tar.gz"
   }
 
-  # Snort3 fuzzing-target source is no longer staged as a tarball: tweaks.sh
-  # now `git clone`s upstream snort3, reverts service_bootp.cc to its
-  # pre-CVE-fix state, and overlays the day-1 lesson harness from the
-  # bah-fuzzing-lab docs branch. See scripts/tweaks.sh for details.
-
   # Let cloud-init finish before running the
   # main provisioning script.  If cloud-init fails,
   # output the log and stop the build.

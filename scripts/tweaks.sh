@@ -59,7 +59,7 @@ LESSONS_REPO_URL=https://github.com/becomingahacker/bah-fuzzing-lab.git
 LESSONS_TMP=/tmp/bah-fuzzing-lab
 GUIDES_DIR=/home/cisco/guides
 
-rm -rf "$LESSONS_TMP"
+rm -rf "$LESSONS_TMP" || true
 git clone --depth 1 --branch docs --single-branch "$LESSONS_REPO_URL" "$LESSONS_TMP"
 
 install -d -o cisco -g cisco "$GUIDES_DIR"
